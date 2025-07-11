@@ -1,0 +1,21 @@
+.sidenav-container {
+  height: 100vh;
+}
+
+.sidenav {
+  width: 250px;
+  background-color: #1976d2;
+  color: white;
+}
+
+.mat-list-item {
+  color: white !important;
+}
+
+.mat-list-item.active {
+  background-color: #1565c0;
+}
+
+mat-sidenav-content {
+  padding: 20px;
+}
