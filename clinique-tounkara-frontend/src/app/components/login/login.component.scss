@@ -1,0 +1,118 @@
+
+/* Fond avec un dégradé élégant */
+.login-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #e0f7fa, #b0bec5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px;
+}
+
+/* En-tête stylisé */
+.header {
+  text-align: center;
+  padding: 40px 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  width: 100%;
+  max-width: 600px;
+
+  .title {
+    font-size: 2.5em;
+    color: #0288d1;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .subtitle {
+    font-size: 1.2em;
+    color: #455a64;
+    margin: 5px 0 0;
+  }
+}
+
+/* Carte avec un design moderne */
+.login-card {
+  width: 100%;
+  max-width: 400px; /* Plus compact que la page d'inscription */
+  border-radius: 15px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  background: white;
+  padding: 20px;
+
+  .card-title {
+    font-size: 1.8em;
+    color: #0288d1;
+    text-align: center;
+  }
+}
+
+/* Formulaires alignés et espacés */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+/* Conteneur du lien d'inscription */
+.register-link {
+  text-align: center;
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  p {
+    margin: 0;
+    color: #455a64;
+  }
+
+  .register-button {
+    width: 100%;
+  }
+}
+
+/* Bouton de soumission */
+.submit-button {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* Message d'erreur stylisé */
+.error-message {
+  text-align: center;
+  margin-top: 15px;
+  color: #d32f2f;
+  font-size: 14px;
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+  .login-card {
+    padding: 15px;
+  }
+
+  .header {
+    padding: 20px 10px;
+  }
+
+  .title {
+    font-size: 2em;
+  }
+
+  .subtitle {
+    font-size: 1em;
+  }
+}

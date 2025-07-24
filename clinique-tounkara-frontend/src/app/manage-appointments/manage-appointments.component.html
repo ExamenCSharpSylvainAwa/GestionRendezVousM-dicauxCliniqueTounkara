@@ -1,0 +1,84 @@
+<div class="appointments-container">
+  <h1 class="appointments-title">Gestion des Rendez-vous</h1>
+  <button mat-fab color="primary" class="add-appointment-btn" (click)="openCreateAppointmentDialog()">
+    <mat-icon>add</mat-icon>
+  </button>
+
+  <div class="table-container">
+    <table mat-table [dataSource]="dataSource" class="appointments-table">
+
+      <!-- Colonne Motif -->
+      <ng-container matColumnDef="motif">
+        <th mat-header-cell *matHeaderCellDef>Motif</th>
+        <td mat-cell *matCellDef="let appointment" data-label="Motif">{{ appointment.motif }}</td>
+      </ng-container>
+
+      <!-- Colonne Patient -->
+      <ng-container matColumnDef="patient">
+        <th mat-header-cell *matHeaderCellDef>Patient</th>
+        <td mat-cell *matCellDef="let appointment" data-label="Patient">
+          {{ getPatientFullName(appointment) }}
+        </td>
+      </ng-container>
+
+      <!-- Colonne Médecin -->
+      <ng-container matColumnDef="doctor">
+        <th mat-header-cell *matHeaderCellDef>Médecin</th>
+        <td mat-cell *matCellDef="let appointment" data-label="Médecin">
+          {{ getDoctorFullName(appointment) }}
+        </td>
+      </ng-container>
+
+      <!-- Colonne Date & Heure -->
+      <ng-container matColumnDef="date_heure">
+        <th mat-header-cell *matHeaderCellDef>Date & Heure</th>
+        <td mat-cell *matCellDef="let appointment" data-label="Date & Heure">
+          {{ formatDateTime(appointment.date_heure) }}
+        </td>
+      </ng-container>
+
+      <!-- Colonne Statut -->
+      <ng-container matColumnDef="statut">
+        <th mat-header-cell *matHeaderCellDef>Statut</th>
+        <td mat-cell *matCellDef="let appointment" data-label="Statut">
+          <span class="appointment-status" [ngClass]="getAppointmentStatusClass(appointment.statut)">
+            {{ getAppointmentStatusLabel(appointment.statut) }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Colonne Actions -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let appointment" data-label="Actions">
+          
+      
+          <!-- Bouton Confirmer visible uniquement si l'utilisateur est un médecin et que le statut est 'en_attente' -->
+          <button mat-icon-button color="accent" (click)="confirmAppointment(appointment)" title="Confirmer"
+            *ngIf="appointment.statut === 'en_attente' && currentUserRole === 'medecin'">
+            <mat-icon>check_circle</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" (click)="cancelAppointment(appointment)" title="Annuler"
+            [disabled]="appointment.statut === 'annule' || appointment.statut === 'termine'">
+            <mat-icon>cancel</mat-icon>
+          </button>
+          <button mat-icon-button color="primary" (click)="rescheduleAppointment(appointment)" title="Reporter"
+            [disabled]="appointment.statut === 'annule' || appointment.statut === 'termine'">
+            <mat-icon>event_note</mat-icon>
+          </button>
+          <!-- Le bouton de suppression a été retiré comme demandé -->
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+      <!-- Message si aucune donnée -->
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell" [attr.colspan]="displayedColumns.length">
+          Aucun rendez-vous trouvé.
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

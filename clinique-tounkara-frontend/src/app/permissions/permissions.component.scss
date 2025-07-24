@@ -1,0 +1,103 @@
+.permissions-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.role-form {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 0;
+}
+
+.checkbox-item {
+  margin: 5px 0;
+}
+
+.save-button {
+  align-self: flex-end;
+  padding: 10px 20px;
+  font-size: 16px;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.roles-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-header {
+  background-color: #1976d2;
+  color: #fff;
+  font-weight: 500;
+  padding: 12px;
+  text-align: left;
+}
+
+.table-cell {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+.table-header-row {
+  border-bottom: 2px solid #1976d2;
+}
+
+.table-row:hover {
+  background-color: #f5f5f5;
+  transition: background-color 0.2s ease;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 10px;
+}
+
+.action-button {
+  transition: transform 0.2s ease;
+}
+
+.action-button:hover {
+  transform: scale(1.1);
+}
+@media (max-width: 600px) {
+  .permissions-container {
+    padding: 10px;
+  }
+  .full-width {
+    width: 100%;
+  }
+}

@@ -1,0 +1,52 @@
+<div class="permissions-container">
+  <h1 class="title">Gestion des Rôles et Permissions</h1>
+  <form [formGroup]="roleForm" (ngSubmit)="saveRole()" class="role-form">
+    <div class="form-group">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Nom du rôle</mat-label>
+        <input matInput placeholder="Entrez le nom du rôle" formControlName="name">
+        <mat-error *ngIf="roleForm.get('name')?.hasError('required') && roleForm.get('name')?.touched">
+          Le nom est requis
+        </mat-error>
+      </mat-form-field>
+      <div formArrayName="permissions" class="checkbox-group">
+        <mat-checkbox *ngFor="let perm of availablePermissions; let i = index" 
+                      [formControlName]="i" 
+                      [value]="perm.name" 
+                      class="checkbox-item">
+          {{ perm.description }}
+        </mat-checkbox>
+      </div>
+      <button mat-raised-button color="primary" type="submit" [disabled]="roleForm.invalid" class="save-button">
+        Sauvegarder
+      </button>
+    </div>
+  </form>
+
+  <div class="table-container">
+    <table mat-table [dataSource]="dataSource" class="roles-table">
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef class="table-header">Nom</th>
+        <td mat-cell *matCellDef="let role" class="table-cell">{{ role.name }}</td>
+      </ng-container>
+      <ng-container matColumnDef="permissions">
+        <th mat-header-cell *matHeaderCellDef class="table-header">Permissions</th>
+        <td mat-cell *matCellDef="let role" class="table-cell">{{ getPermissionList(role.permissions) }}</td>
+      </ng-container>
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="table-header">Actions</th>
+        <td mat-cell *matCellDef="let role" class="table-cell actions-cell">
+          <button mat-icon-button color="primary" (click)="openRoleDialog(role)" class="action-button">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" (click)="deleteRole(role.id!)" class="action-button">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns" class="table-header-row"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+    </table>
+  </div>
+</div>

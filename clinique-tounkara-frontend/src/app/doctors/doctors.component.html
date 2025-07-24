@@ -1,0 +1,77 @@
+<div class="doctors-container">
+  <h1 class="doctors-title">Gestion des Médecins</h1>
+  <button mat-fab color="primary" class="add-doctor-btn" (click)="openCreateDoctorDialog()">
+    <mat-icon>person_add</mat-icon>
+  </button>
+
+  <div class="table-container">
+    <table mat-table [dataSource]="dataSource" class="doctors-table">
+
+      <!-- Colonne Prénom -->
+      <ng-container matColumnDef="prenom">
+        <th mat-header-cell *matHeaderCellDef>Prénom</th>
+        <td mat-cell *matCellDef="let doctor" data-label="Prénom">{{ doctor.user?.prenom }}</td>
+      </ng-container>
+
+      <!-- Colonne Nom -->
+      <ng-container matColumnDef="nom">
+        <th mat-header-cell *matHeaderCellDef>Nom</th>
+        <td mat-cell *matCellDef="let doctor" data-label="Nom">{{ doctor.user?.nom }}</td>
+      </ng-container>
+
+      <!-- Colonne Email -->
+      <ng-container matColumnDef="email">
+        <th mat-header-cell *matHeaderCellDef>Email</th>
+        <td mat-cell *matCellDef="let doctor" data-label="Email">{{ doctor.user?.email }}</td>
+      </ng-container>
+
+      <!-- Colonne Spécialité -->
+      <ng-container matColumnDef="specialite">
+        <th mat-header-cell *matHeaderCellDef>Spécialité</th>
+        <td mat-cell *matCellDef="let doctor" data-label="Spécialité">{{ doctor.specialite }}</td>
+      </ng-container>
+
+      <!-- Colonne Tarif de consultation -->
+      <ng-container matColumnDef="tarif_consultation">
+        <th mat-header-cell *matHeaderCellDef>Tarif Consultation</th>
+        <td mat-cell *matCellDef="let doctor" data-label="Tarif Consultation">{{ doctor.tarif_consultation | currency:'XOF':'symbol':'1.0-2':'fr' }}</td>
+      </ng-container>
+
+      <!-- Colonne Statut Actif -->
+      <ng-container matColumnDef="actif">
+        <th mat-header-cell *matHeaderCellDef>Actif</th>
+        <td mat-cell *matCellDef="let doctor" data-label="Actif">
+          <mat-slide-toggle
+            [checked]="doctor.user?.actif"
+            (change)="toggleActive(doctor)"
+            color="primary">
+          </mat-slide-toggle>
+        </td>
+      </ng-container>
+
+      <!-- Colonne Actions -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let doctor" data-label="Actions">
+          <!-- Le bouton de modification a été retiré comme demandé -->
+          <!-- <button mat-icon-button color="primary" (click)="openDialog(doctor)" title="Modifier">
+            <mat-icon>edit</mat-icon>
+          </button> -->
+          <button mat-icon-button color="warn" (click)="deleteDoctor(doctor)" title="Supprimer">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+      <!-- Message si aucune donnée -->
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell" [attr.colspan]="displayedColumns.length">
+          Aucun médecin trouvé.
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

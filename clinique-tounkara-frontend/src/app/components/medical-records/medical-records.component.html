@@ -1,1 +1,23 @@
-<p>medical-records works!</p>
+<mat-card>
+  <mat-card-title>Dossiers Médicaux</mat-card-title>
+  <mat-card-actions>
+    <button mat-raised-button color="primary" (click)="openCreateDialog()">Ajouter un dossier médical</button>
+  </mat-card-actions>
+  <mat-card-content>
+    @if (records.length > 0) {
+      <mat-list>
+        @for (record of records; track record.id) {
+          <mat-list-item>
+            <span>Patient: {{ getPatientName(record) }}</span>
+            <span> - Date: {{ record.date_creation | date:'dd/MM/yyyy' }}</span>
+            <button mat-icon-button color="warn" (click)="deleteRecord(record.id)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </mat-list-item>
+        }
+      </mat-list>
+    } @else {
+      <p>Aucun dossier médical trouvé.</p>
+    }
+  </mat-card-content>
+</mat-card>

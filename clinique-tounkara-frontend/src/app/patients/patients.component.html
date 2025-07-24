@@ -1,0 +1,93 @@
+<div class="patients-container">
+  <h1 class="patients-title">Gestion des Patients</h1>
+  <button mat-fab color="primary" class="add-patient-btn" (click)="openCreatePatientDialog()">
+    <mat-icon>person_add</mat-icon>
+  </button>
+
+  <div class="table-container">
+    <table mat-table [dataSource]="dataSource" class="patients-table">
+
+      <!-- Colonne Prénom -->
+      <ng-container matColumnDef="prenom">
+        <th mat-header-cell *matHeaderCellDef>Prénom</th>
+        <td mat-cell *matCellDef="let patient" data-label="Prénom">{{ patient.user?.prenom }}</td>
+      </ng-container>
+
+      <!-- Colonne Nom -->
+      <ng-container matColumnDef="nom">
+        <th mat-header-cell *matHeaderCellDef>Nom</th>
+        <td mat-cell *matCellDef="let patient" data-label="Nom">{{ patient.user?.nom }}</td>
+      </ng-container>
+
+      <!-- Colonne Email -->
+      <ng-container matColumnDef="email">
+        <th mat-header-cell *matHeaderCellDef>Email</th>
+        <td mat-cell *matCellDef="let patient" data-label="Email">{{ patient.user?.email }}</td>
+      </ng-container>
+
+      <!-- Colonne Numéro d'assurance -->
+      <ng-container matColumnDef="numero_assurance">
+        <th mat-header-cell *matHeaderCellDef>Numéro d'assurance</th>
+        <td mat-cell *matCellDef="let patient" data-label="Numéro d'assurance">
+          {{ patient.numero_assurance }}
+        </td>
+      </ng-container>
+
+      <!-- Colonne Adresse -->
+      <ng-container matColumnDef="adresse">
+        <th mat-header-cell *matHeaderCellDef>Adresse</th>
+        <td mat-cell *matCellDef="let patient" data-label="Adresse">
+          {{ patient.adresse }}
+        </td>
+      </ng-container>
+
+      <!-- Colonne Date de naissance -->
+      <ng-container matColumnDef="date_naissance">
+        <th mat-header-cell *matHeaderCellDef>Date de naissance</th>
+        <td mat-cell *matCellDef="let patient" data-label="Date de naissance">
+          {{ patient.date_naissance | date:'dd/MM/yyyy' }}
+        </td>
+      </ng-container>
+
+      <!-- Colonne Sexe -->
+      <ng-container matColumnDef="sexe">
+        <th mat-header-cell *matHeaderCellDef>Sexe</th>
+        <td mat-cell *matCellDef="let patient" data-label="Sexe">
+          {{ patient.sexe === 'M' ? 'Masculin' : 'Féminin' }}
+        </td>
+      </ng-container>
+
+      <!-- Colonne Statut Actif -->
+      <ng-container matColumnDef="actif">
+        <th mat-header-cell *matHeaderCellDef>Actif</th>
+        <td mat-cell *matCellDef="let patient" data-label="Actif">
+          <mat-slide-toggle
+            [checked]="patient.user?.actif"
+            (change)="toggleActive(patient)"
+            color="primary">
+          </mat-slide-toggle>
+        </td>
+      </ng-container>
+
+      <!-- Colonne Actions -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let patient" data-label="Actions">
+          <button mat-icon-button color="warn" (click)="deletePatient(patient)" title="Supprimer">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+      <!-- Message si aucune donnée -->
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell" [attr.colspan]="displayedColumns.length">
+          Aucun patient trouvé.
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

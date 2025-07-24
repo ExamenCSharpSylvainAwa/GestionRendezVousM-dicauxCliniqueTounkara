@@ -1,0 +1,72 @@
+.dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #c0392b; // Rouge pour l'avertissement
+  font-size: 1.5em;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+
+  mat-icon {
+    font-size: 1.2em;
+  }
+}
+
+.dialog-content {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+
+  .confirmation-message {
+    font-size: 1.1em;
+    line-height: 1.5;
+    color: #333;
+    strong {
+      color: #000;
+    }
+  }
+
+  .warning-text {
+    font-weight: 600;
+    color: #e74c3c;
+    font-size: 0.95em;
+  }
+
+  .cancel-reason-field {
+    width: 100%;
+    margin-top: 15px;
+  }
+}
+
+.dialog-actions {
+  padding: 15px 24px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+
+  button {
+    padding: 8px 16px;
+    border-radius: 5px;
+    font-weight: 500;
+    mat-icon {
+      margin-right: 5px;
+    }
+  }
+
+  .cancel-button {
+    color: #3f51b5;
+    &:hover {
+      background-color: rgba(63, 81, 181, 0.04);
+    }
+  }
+
+  .confirm-button {
+    background-color: #e74c3c;
+    color: white;
+    &:hover {
+      background-color: #c0392b;
+    }
+  }
+}

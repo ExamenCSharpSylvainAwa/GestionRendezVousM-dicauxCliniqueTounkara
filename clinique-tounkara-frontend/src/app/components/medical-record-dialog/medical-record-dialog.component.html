@@ -1,0 +1,17 @@
+<h2 mat-dialog-title>Créer un dossier médical</h2>
+<mat-dialog-content>
+  <mat-form-field appearance="fill">
+    <mat-label>Sélectionner un patient</mat-label>
+    <mat-select [(ngModel)]="selectedPatientId" required>
+      @for (patient of data.patients; track patient.id) {
+        @if (patient.user) {
+          <mat-option [value]="patient.id">{{ patient.user.nom }} {{ patient.user.prenom }}</mat-option>
+        }
+      }
+    </mat-select>
+  </mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Annuler</button>
+  <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="!selectedPatientId">Créer</button>
+</mat-dialog-actions>

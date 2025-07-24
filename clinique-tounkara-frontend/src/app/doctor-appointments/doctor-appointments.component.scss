@@ -1,0 +1,59 @@
+
+.appointments-container {
+  max-width: 950px;
+  margin: 3rem auto;
+  padding: 2rem;
+  background: #f7faff;
+  border-radius: 18px;
+  box-shadow: 0 12px 32px rgba(0, 56, 101, 0.15);
+}
+
+h1 {
+  color: #003865;
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.loading {
+  text-align: center;
+  color: #003865;
+  font-size: 1.2rem;
+}
+
+.error-message {
+  color: #ff4d4f;
+  text-align: center;
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #fff1f1;
+  border-radius: 10px;
+}
+
+.appointments-table {
+  overflow-x: auto;
+}
+
+mat-table {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 12px;
+}
+
+.mat-header-cell {
+  color: #003865;
+  font-weight: 600;
+  padding: 1rem;
+  background: #e6f0fa;
+}
+
+.mat-cell {
+  color: #344767;
+  padding: 1rem;
+  border-bottom: 1px solid #e6f0fa;
+}
+
+.mat-row:hover {
+  background: #f9fcff;
+}

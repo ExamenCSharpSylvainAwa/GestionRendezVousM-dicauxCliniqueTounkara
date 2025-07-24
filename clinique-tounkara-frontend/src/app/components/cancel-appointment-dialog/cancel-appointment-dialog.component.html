@@ -1,0 +1,53 @@
+<div class="cancel-dialog">
+  <h2 mat-dialog-title class="dialog-title">
+    <mat-icon>warning</mat-icon>
+    Annuler le rendez-vous
+  </h2>
+  
+  <mat-dialog-content class="dialog-content">
+    <div class="appointment-info">
+      <p><strong>Patient :</strong> {{ data.patientName }}</p>
+      <p><strong>Médecin :</strong> {{ data.doctorName }}</p>
+      <p><strong>Date :</strong> {{ data.appointmentDate }}</p>
+    </div>
+    
+    <p class="confirmation-message">
+      Êtes-vous sûr de vouloir <strong>annuler</strong> ce rendez-vous ?
+    </p>
+    
+    <mat-form-field appearance="outline" class="cancel-reason-field">
+      <mat-label>Motif d'annulation *</mat-label>
+      <textarea 
+        matInput 
+        [(ngModel)]="cancellationReason" 
+        placeholder="Veuillez indiquer la raison de l'annulation..."
+        rows="3"
+        required>
+      </textarea>
+      <mat-hint>Ce champ est obligatoire</mat-hint>
+    </mat-form-field>
+    
+    <p class="warning-text">
+      ⚠️ Cette action est irréversible.
+    </p>
+  </mat-dialog-content>
+  
+  <mat-dialog-actions class="dialog-actions">
+    <button 
+      mat-button 
+      (click)="onCancel()"
+      class="cancel-button">
+      <mat-icon>close</mat-icon>
+      Retour
+    </button>
+    <button 
+      mat-raised-button 
+      color="warn" 
+      (click)="onConfirm()"
+      [disabled]="!cancellationReason.trim()"
+      class="confirm-button">
+      <mat-icon>cancel</mat-icon>
+      Annuler le RDV
+    </button>
+  </mat-dialog-actions>
+</div>

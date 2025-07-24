@@ -1,0 +1,20 @@
+/* app.component.scss */
+.app-container {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: #f5f5f5;
+}
+
+// Styles globaux pour l'application
+:host {
+  display: block;
+  height: 100vh;
+  width: 100vw;
+}
+
+// Styles pour les pages sans sidebar (login, register, etc.)
+router-outlet + * {
+  height: 100vh;
+  width: 100vw;
+}

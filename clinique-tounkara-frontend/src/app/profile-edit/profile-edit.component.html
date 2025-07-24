@@ -1,0 +1,145 @@
+<div class="profile-edit-container">
+  <mat-card class="profile-card">
+    <mat-card-header>
+      <mat-card-title class="card-title">Modifier mon profil</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      @if (user.id) {
+        <form (ngSubmit)="onSubmit()" class="profile-form">
+          <div class="form-grid">
+            <mat-form-field appearance="fill" class="form-field">
+              <mat-label>Prénom</mat-label>
+              <input matInput [(ngModel)]="editedUser.prenom" name="prenom" required>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill" class="form-field">
+              <mat-label>Nom</mat-label>
+              <input matInput [(ngModel)]="editedUser.nom" name="nom" required>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill" class="form-field">
+              <mat-label>Email</mat-label>
+              <input matInput [(ngModel)]="editedUser.email" name="email" required>
+            </mat-form-field>
+          </div>
+
+          @if (getUserRole() === 'patient') {
+            <div class="form-grid">
+              <mat-form-field appearance="fill" class="form-field">
+                <mat-label>Téléphone</mat-label>
+                <input matInput [(ngModel)]="editedUser.telephone" name="telephone">
+              </mat-form-field>
+              <mat-form-field appearance="fill" class="form-field">
+                <mat-label>Numéro d'assurance</mat-label>
+                <input matInput [(ngModel)]="patientData.numero_assurance" name="numero_assurance">
+              </mat-form-field>
+              <mat-form-field appearance="fill" class="form-field">
+                <mat-label>Adresse</mat-label>
+                <input matInput [(ngModel)]="patientData.adresse" name="adresse">
+              </mat-form-field>
+              <mat-form-field appearance="fill" class="form-field">
+                <mat-label>Date de naissance</mat-label>
+                <input matInput [matDatepicker]="dobPicker" [(ngModel)]="patientData.date_naissance" name="date_naissance">
+                <mat-datepicker-toggle matSuffix [for]="dobPicker"></mat-datepicker-toggle>
+                <mat-datepicker #dobPicker></mat-datepicker>
+              </mat-form-field>
+              <mat-form-field appearance="fill" class="form-field">
+                <mat-label>Sexe</mat-label>
+                <mat-select [(ngModel)]="patientData.sexe" name="sexe" (ngModelChange)="updatePatientField('sexe', $event)">
+                  <mat-option value="M">Masculin</mat-option>
+                  <mat-option value="F">Féminin</mat-option>
+                  <mat-option value="Autre">Autre</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="fill" class="form-field">
+                <mat-label>Groupe sanguin</mat-label>
+                <mat-select [(ngModel)]="patientData.groupe_sanguin" name="groupe_sanguin" (ngModelChange)="updatePatientField('groupe_sanguin', $event)">
+                  <mat-option value="A+">A+</mat-option>
+                  <mat-option value="A-">A-</mat-option>
+                  <mat-option value="B+">B+</mat-option>
+                  <mat-option value="B-">B-</mat-option>
+                  <mat-option value="AB+">AB+</mat-option>
+                  <mat-option value="AB-">AB-</mat-option>
+                  <mat-option value="O+">O+</mat-option>
+                  <mat-option value="O-">O-</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="fill" class="form-field textarea-field">
+                <mat-label>Antécédents médicaux</mat-label>
+                <textarea matInput [(ngModel)]="patientData.antecedent_medicaux" name="antecedent_medicaux" (ngModelChange)="updatePatientField('antecedent_medicaux', $event)"></textarea>
+              </mat-form-field>
+            </div>
+          }
+
+          @if (getUserRole() === 'medecin') {
+            <div class="form-grid">
+              <mat-form-field appearance="fill" class="form-field">
+                <mat-label>Téléphone</mat-label>
+                <input matInput [(ngModel)]="editedUser.telephone" name="telephone">
+              </mat-form-field>
+              <mat-form-field appearance="fill" class="form-field">
+                <mat-label>Spécialité</mat-label>
+                <mat-select [(ngModel)]="medecinData.specialite" name="specialite" (ngModelChange)="updateMedecinField('specialite', $event)">
+                  <mat-option value="Cardiologie">Cardiologie</mat-option>
+                  <mat-option value="Dermatologie">Dermatologie</mat-option>
+                  <mat-option value="Généraliste">Généraliste</mat-option>
+                  <mat-option value="Pédiatrie">Pédiatrie</mat-option>
+                  <mat-option value="Orthopédie">Orthopédie</mat-option>
+                  <mat-option value="Neurologie">Neurologie</mat-option>
+                  <mat-option value="Ophtalmologie">Ophtalmologie</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="fill" class="form-field">
+                <mat-label>Numéro d'ordre</mat-label>
+                <input matInput [(ngModel)]="medecinData.numero_ordre" name="numero_ordre" (ngModelChange)="updateMedecinField('numero_ordre', $event)">
+              </mat-form-field>
+              <mat-form-field appearance="fill" class="form-field">
+                <mat-label>Tarif de consultation</mat-label>
+                <input matInput type="number" [(ngModel)]="medecinData.tarif_consultation" name="tarif_consultation" (ngModelChange)="updateMedecinField('tarif_consultation', $event)">
+              </mat-form-field>
+              <mat-checkbox class="checkbox-field" [(ngModel)]="medecinData.disponible" name="disponible" (ngModelChange)="updateMedecinField('disponible', $event)">
+                Disponible
+              </mat-checkbox>
+            </div>
+          }
+
+          @if (getUserRole() === 'personnel') {
+            <div class="form-grid">
+              <mat-form-field appearance="fill" class="form-field">
+                <mat-label>Téléphone</mat-label>
+                <input matInput [(ngModel)]="editedUser.telephone" name="telephone">
+              </mat-form-field>
+              <mat-form-field appearance="fill" class="form-field">
+                <mat-label>Poste</mat-label>
+                <input matInput [(ngModel)]="personnelData.poste" name="poste" (ngModelChange)="updatePersonnelField('poste', $event)">
+              </mat-form-field>
+            </div>
+          }
+
+          @if (getUserRole() === 'administrateur') {
+            <div class="form-grid">
+              <mat-form-field appearance="fill" class="form-field">
+                <mat-label>Téléphone</mat-label>
+                <input matInput [(ngModel)]="editedUser.telephone" name="telephone">
+              </mat-form-field>
+            </div>
+          }
+
+          <button mat-raised-button color="primary" class="submit-button" type="submit" [disabled]="isLoading">
+            @if (!isLoading) {
+              <span>Enregistrer</span>
+            } @else {
+              <mat-spinner diameter="20" color="primary"></mat-spinner>
+            }
+          </button>
+        </form>
+      } @else {
+        <p class="loading-text">Chargement du profil...</p>
+      }
+
+      @if (errorMessage) {
+        <p class="error-message">{{ errorMessage }}</p>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

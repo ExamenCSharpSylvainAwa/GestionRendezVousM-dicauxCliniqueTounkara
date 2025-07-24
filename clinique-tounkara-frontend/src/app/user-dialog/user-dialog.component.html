@@ -1,0 +1,186 @@
+<!-- src/app/user-dialog/user-dialog.component.html -->
+<div class="user-dialog">
+  <h2 mat-dialog-title>
+    {{ isEditMode ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur' }}
+  </h2>
+
+  <mat-dialog-content class="dialog-content">
+    <form class="user-form" (ngSubmit)="onConfirm()">
+      
+      <!-- Section: Informations générales (table users) -->
+      <div class="form-section">
+        <h3 class="section-title">Informations générales</h3>
+        
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Prénom *</mat-label>
+            <input matInput [(ngModel)]="user.prenom" name="prenom" required>
+            <mat-icon matSuffix>person</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Nom *</mat-label>
+            <input matInput [(ngModel)]="user.nom" name="nom" required>
+            <mat-icon matSuffix>person</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email *</mat-label>
+            <input matInput type="email" [(ngModel)]="user.email" name="email" required>
+            <mat-icon matSuffix>email</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Téléphone</mat-label>
+            <input matInput type="tel" [(ngModel)]="user.telephone" name="telephone">
+            <mat-icon matSuffix>phone</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Rôle *</mat-label>
+            <mat-select [(ngModel)]="user.role" name="role" (selectionChange)="onRoleChange()" required>
+              <mat-option *ngFor="let role of roles" [value]="role.value">
+                {{ role.label }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>badge</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row" *ngIf="!isEditMode">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Mot de passe *</mat-label>
+            <input matInput [type]="hidePassword ? 'password' : 'text'" 
+                   [(ngModel)]="user.password" name="password" required>
+            <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button">
+              <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-slide-toggle [(ngModel)]="user.actif" name="actif" color="primary">
+            Compte actif
+          </mat-slide-toggle>
+        </div>
+      </div>
+
+      <!-- Section: Informations spécifiques au patient -->
+      <div class="form-section" *ngIf="user.role === 'patient'">
+        <h3 class="section-title">Informations patient</h3>
+        
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Date de naissance *</mat-label>
+            <input matInput [matDatepicker]="picker" 
+                   [(ngModel)]="dateNaissance" name="dateNaissance"
+                   [matDatepickerFilter]="dateFilter" required>
+            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Sexe *</mat-label>
+            <mat-select [(ngModel)]="user.sexe" name="sexe" required>
+              <mat-option *ngFor="let sexe of sexeOptions" [value]="sexe.value">
+                {{ sexe.label }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>wc</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Adresse *</mat-label>
+            <textarea matInput [(ngModel)]="adresse" name="adresse" 
+                      rows="2" placeholder="Adresse complète" required></textarea>
+            <mat-icon matSuffix>home</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Numéro d'assurance</mat-label>
+            <input matInput [(ngModel)]="user.numero_assurance" name="numero_assurance" 
+                   placeholder="Ex: CNaPS123456">
+            <mat-icon matSuffix>credit_card</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Groupe sanguin</mat-label>
+            <mat-select [(ngModel)]="user.groupe_sanguin" name="groupe_sanguin">
+              <mat-option *ngFor="let groupe of groupesSanguins" [value]="groupe">
+                {{ groupe }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>bloodtype</mat-icon>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Section: Informations spécifiques au médecin -->
+      <div class="form-section" *ngIf="user.role === 'medecin'">
+        <h3 class="section-title">Informations médecin</h3>
+        
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Spécialité *</mat-label>
+            <mat-select [(ngModel)]="user.specialite" name="specialite" required>
+              <mat-option *ngFor="let specialty of specialties" [value]="specialty">
+                {{ specialty }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>medical_services</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Numéro d'ordre *</mat-label>
+            <input matInput [(ngModel)]="user.numero_ordre" name="numero_ordre" 
+                   placeholder="Ex: 12345" required>
+            <mat-icon matSuffix>confirmation_number</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Tarif de consultation (FCFA) *</mat-label>
+            <input matInput type="number" 
+                  [(ngModel)]="user.tarif_consultation" 
+                  name="tarif_consultation" 
+                  min="0" 
+                  step="1000" 
+                  [value]="user.tarif_consultation || 0"
+                  (input)="onNumberInput($event, 'tarif_consultation')" 
+                  required>
+            <mat-icon matSuffix>payments</mat-icon>
+          </mat-form-field>
+        </div>
+      </div>
+
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-button (click)="onCancel()" type="button">
+      Annuler
+    </button>
+    <button mat-raised-button color="primary" (click)="onConfirm()" type="button">
+      {{ isEditMode ? 'Modifier' : 'Créer' }}
+    </button>
+  </mat-dialog-actions>
+</div>

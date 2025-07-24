@@ -1,0 +1,95 @@
+<div class="reschedule-dialog">
+  <h2 mat-dialog-title>Reporter le rendez-vous</h2>
+
+  <mat-dialog-content>
+    <div class="appointment-info">
+      <p><strong>Patient :</strong> {{ data.patientName }}</p>
+      <p><strong>Médecin :</strong> {{ data.doctorName }}</p>
+      <p><strong>Date actuelle :</strong> {{ data.currentDate }}</p>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Nouvelle date du rendez-vous</mat-label>
+      <input matInput
+             [matDatepicker]="newDatePicker"
+             placeholder="Choisissez une nouvelle date"
+             [(ngModel)]="newDate" 
+             (dateChange)="onDateChange($event)"
+             name="newDate"
+             [min]="minDate"
+             [matDatepickerFilter]="dateFilter"
+             required />
+      <mat-datepicker-toggle matSuffix [for]="newDatePicker" (click)="newDatePicker.open()"></mat-datepicker-toggle>
+      <mat-datepicker #newDatePicker></mat-datepicker>
+    </mat-form-field>
+
+    <!-- Affichage des messages de disponibilité -->
+    <div *ngIf="noServiceMessage || availabilityMessage || isCheckingSchedule" class="availability-status-container">
+      <div *ngIf="noServiceMessage" class="status-message error-message">
+        <mat-icon>error</mat-icon>
+        <span>{{ noServiceMessage }}</span>
+      </div>
+      <div *ngIf="availabilityMessage" class="status-message"
+           [ngClass]="{
+             'status-warning': availabilityMessage.includes('⚠️'),
+             'status-error': availabilityMessage.includes('❌'),
+             'status-success': availabilityMessage.includes('✅')
+           }">
+        <mat-icon *ngIf="availabilityMessage.includes('⚠️')">warning</mat-icon>
+        <mat-icon *ngIf="availabilityMessage.includes('❌')">block</mat-icon>
+        <mat-icon *ngIf="availabilityMessage.includes('✅')">check_circle</mat-icon>
+        <span>{{ availabilityMessage }}</span>
+      </div>
+      <div *ngIf="isCheckingSchedule" class="status-message loading-message">
+        <mat-progress-spinner diameter="24" mode="indeterminate"></mat-progress-spinner>
+        <span>Vérification des créneaux disponibles...</span>
+      </div>
+    </div>
+
+    <!-- Sélecteur d'heure, affiché seulement si des heures sont disponibles et pas en chargement -->
+    <mat-form-field *ngIf="availableHours.length > 0 && !isCheckingSchedule" appearance="outline" class="full-width">
+      <mat-label>Nouvelle heure du rendez-vous</mat-label>
+      <mat-select [(ngModel)]="newTime"
+                  name="newTime"
+                  required>
+        <mat-option *ngFor="let hour of availableHours" [value]="hour">
+          {{ hour }}
+        </mat-option>
+      </mat-select>
+      <mat-icon matSuffix>access_time</mat-icon>
+    </mat-form-field>
+
+    <!-- Message si aucun créneau n'est disponible pour la date sélectionnée -->
+    <div *ngIf="availableHours.length === 0 && !isCheckingSchedule && newDate"
+         class="no-slots-message-box">
+      <mat-icon>sentiment_dissatisfied</mat-icon>
+      <span>Désolé, aucun créneau disponible pour cette date et heure. Veuillez choisir une autre date.</span>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Motif du report</mat-label>
+      <textarea
+        matInput
+        [(ngModel)]="rescheduleReason"
+        placeholder="Veuillez indiquer la raison du report..."
+        rows="3"
+        required>
+      </textarea>
+    </mat-form-field>
+
+    <p class="warning-text">
+      ⚠️ Le patient sera informé de ce report.
+    </p>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="onCancel()">Annuler</button>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="onConfirm()"
+      [disabled]="!newDate || !newTime || !rescheduleReason.trim() || isCheckingSchedule">
+      Confirmer le report
+    </button>
+  </mat-dialog-actions>
+</div>

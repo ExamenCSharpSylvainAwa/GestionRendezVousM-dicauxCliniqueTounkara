@@ -1,1 +1,48 @@
-<p>dashboard works!</p>
+<div class="dashboard-container">
+  <!-- Titre d'accueil -->
+  <div class="welcome-section">
+    <h1 class="welcome-title">{{ welcomeMessage }}</h1>
+    <p class="welcome-subtitle">Votre santé, notre priorité. Découvrez nos services exclusifs.</p>
+  </div>
+
+  <!-- Section Services -->
+  <section class="services-section">
+    <h2>Nos Services</h2>
+    <div class="services-grid">
+      <mat-card *ngFor="let service of services" class="service-card">
+        <mat-card-header>
+          <div mat-card-avatar class="service-icon">
+            <mat-icon>{{ service.icon }}</mat-icon>
+          </div>
+          <mat-card-title>{{ service.title }}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p>{{ service.description }}</p>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </section>
+
+  <!-- Section Témoignages -->
+  <section class="testimonials-section">
+    <h2>Témoignages</h2>
+    <mat-list>
+      <mat-list-item *ngFor="let testimonial of testimonials" class="testimonial-item">
+        <div matLine>{{ testimonial.text }}</div>
+        <div matLine class="testimonial-author">
+          <strong>{{ testimonial.name }}</strong> - {{ '★'.repeat(testimonial.rating) }}
+        </div>
+      </mat-list-item>
+    </mat-list>
+  </section>
+
+  <!-- Section Contact -->
+  <section class="contact-section">
+    <h2>Contactez-nous</h2>
+    <div class="contact-details">
+      <p><mat-icon>phone</mat-icon> <a href="tel:+33123456789">+33 1 23 45 67 89</a></p>
+      <p><mat-icon>email</mat-icon> <a href="mailto:contact@tounkara.fr">contact.fr</a></p>
+      <p><mat-icon>location_on</mat-icon> 123 Rue de la Santé, 75001 Paris</p>
+    </div>
+  </section>
+</div>

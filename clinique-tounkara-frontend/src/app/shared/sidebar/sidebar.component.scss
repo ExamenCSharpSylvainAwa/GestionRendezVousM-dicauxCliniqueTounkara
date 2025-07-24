@@ -1,21 +1,189 @@
+/* sidebar.component.scss */
 .sidenav-container {
   height: 100vh;
+  background-color: #fafafa;
 }
 
-.sidenav {
-  width: 250px;
-  background-color: #1976d2;
+mat-sidenav {
+  width: 280px;
+  background-color: #cecaca;
   color: white;
+  box-shadow: 3px 0 6px rgba(0, 0, 0, 0.1);
+
+  .sidebar-header {
+    padding: 20px 16px;
+    background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    h2 {
+      margin: 0 0 12px 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.9);
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+    }
+  }
 }
 
-.mat-list-item {
-  color: white !important;
-}
+mat-nav-list {
+  padding-top: 8px;
 
-.mat-list-item.active {
-  background-color: #1565c0;
+  a[mat-list-item] {
+    color: rgba(255, 255, 255, 0.9);
+    margin: 4px 8px;
+    border-radius: 8px;
+    transition: all 0.2s ease-in-out;
+    
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+
+    &.active {
+      background-color: rgba(255, 255, 255, 0.15);
+      color: white;
+      font-weight: 500;
+      
+      mat-icon {
+        color: white;
+      }
+    }
+
+    mat-icon {
+      color: rgba(255, 255, 255, 0.8);
+      margin-right: 16px;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    // Style spécial pour le bouton de déconnexion
+    &:last-child {
+      margin-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 8px;
+      
+      &:hover {
+        background-color: rgba(244, 67, 54, 0.1);
+        
+        mat-icon {
+          color: #ff5252;
+        }
+      }
+    }
+  }
 }
 
 mat-sidenav-content {
-  padding: 20px;
+  padding: 0;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+
+  .menu-button {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 1000;
+    background-color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    
+    &:hover {
+      background-color: #f5f5f5;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  mat-sidenav {
+    width: 260px;
+    
+    .sidebar-header {
+      padding: 16px 12px;
+      
+      h2 {
+        font-size: 16px;
+      }
+    }
+  }
+
+  mat-nav-list a[mat-list-item] {
+    font-size: 14px;
+    margin: 2px 4px;
+    
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      margin-right: 12px;
+    }
+  }
+}
+
+// Animation pour l'ouverture/fermeture
+mat-sidenav {
+  .mat-drawer-transition .mat-drawer-content {
+    transition-duration: 400ms;
+    transition-timing-function: cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+}
+
+// Style pour le contenu principal avec sidebar ouverte
+.mat-drawer-container.mat-drawer-container-has-open {
+  .mat-drawer-content {
+    margin-left: 0;
+  }
+}
+
+// Couleurs personnalisées pour différents types de liens
+mat-nav-list {
+  // Liens de gestion (patients, médecins, etc.)
+  a[mat-list-item][routerLink*="patients"],
+  a[mat-list-item][routerLink*="doctors"],
+  a[mat-list-item][routerLink*="users"] {
+    &:hover, &.active {
+      background-color: rgba(76, 175, 80, 0.1);
+      
+      mat-icon {
+        color: #4caf50;
+      }
+    }
+  }
+
+  // Liens de rendez-vous et planning
+  a[mat-list-item][routerLink*="appointments"],
+  a[mat-list-item][routerLink*="schedule"] {
+    &:hover, &.active {
+      background-color: rgba(255, 152, 0, 0.1);
+      
+      mat-icon {
+        color: #ff9800;
+      }
+    }
+  }
+
+  // Liens financiers
+  a[mat-list-item][routerLink*="billing"],
+  a[mat-list-item][routerLink*="payments"] {
+    &:hover, &.active {
+      background-color: rgba(156, 39, 176, 0.1);
+      
+      mat-icon {
+        color: #9c27b0;
+      }
+    }
+  }
 }

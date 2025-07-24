@@ -1,0 +1,35 @@
+<mat-card>
+  <mat-card-title>Consultations</mat-card-title>
+  <mat-card-actions>
+    <button mat-raised-button color="primary" (click)="openCreateDialog()">
+      <mat-icon>add</mat-icon> Ajouter une consultation
+    </button>
+  </mat-card-actions>
+  <mat-card-content>
+    @if (isLoading) {
+      <mat-spinner diameter="40" style="margin: 24px auto;"></mat-spinner>
+    } @else if (consultations.length > 0) {
+      <mat-list>
+        @for (consultation of consultations; track consultation.id) {
+          <mat-list-item>
+            <div class="content">
+              <span class="patient">Patient: {{ getPatientName(consultation) }}</span>
+              <span class="date"> - Date: {{ consultation.date | date:'dd/MM/yyyy' }}</span>
+              <span class="details"> - Symptômes: {{ consultation.symptomes | slice:0:100 }}{{ consultation.symptomes.length > 100 ? '...' : '' }}</span>
+            </div>
+            <div class="actions">
+              <button mat-icon-button color="primary" (click)="openEditDialog(consultation)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="deleteConsultation(consultation.id)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </mat-list-item>
+        }
+      </mat-list>
+    } @else {
+      <p>Aucune consultation trouvée.</p>
+    }
+  </mat-card-content>
+</mat-card>

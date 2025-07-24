@@ -1,0 +1,42 @@
+
+<div class="schedule-view-container" role="region" aria-label="Planning du médecin">
+  <h1>Consulter le Planning</h1>
+
+  <div class="schedule-grid" *ngIf="!isLoading && !errorMessage" role="grid">
+    <div
+      *ngFor="let day of daysOfWeek; let i = index; trackBy: trackByIndex"
+      class="schedule-card"
+      role="gridcell"
+      [attr.aria-label]="'Horaires pour ' + day"
+    >
+      <h3>{{ day }}</h3>
+
+      <div class="availability" *ngIf="schedule[i].is_available; else unavailable" role="region">
+        <div class="time-slot">
+          <span><i class="fas fa-clock"></i> Heure de début:</span> {{ schedule[i].start_time || 'N/A' }}
+        </div>
+        <div class="time-slot">
+          <span><i class="fas fa-clock"></i> Heure de fin:</span> {{ schedule[i].end_time || 'N/A' }}
+        </div>
+        <div class="time-slot">
+          <span><i class="fas fa-coffee"></i> Début de pause:</span> {{ schedule[i].break_start || 'N/A' }}
+        </div>
+        <div class="time-slot">
+          <span><i class="fas fa-coffee"></i> Fin de pause:</span> {{ schedule[i].end_break || 'N/A' }}
+        </div>
+      </div>
+
+      <ng-template #unavailable>
+        <p class="unavailable-text" role="alert"><i class="fas fa-times"></i> Non disponible</p>
+      </ng-template>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="loading" role="alert">
+    <i class="fas fa-spinner fa-spin"></i> Chargement...
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message" role="alert">
+    <i class="fas fa-exclamation-triangle"></i> {{ errorMessage }}
+  </div>
+</div>

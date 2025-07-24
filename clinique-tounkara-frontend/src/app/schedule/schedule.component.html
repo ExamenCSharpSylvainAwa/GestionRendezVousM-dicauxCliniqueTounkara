@@ -1,0 +1,83 @@
+<div class="schedule-container">
+  <h1>Configuration des Horaires du Médecin</h1>
+
+  <form [formGroup]="scheduleForm" (ngSubmit)="onSubmit()">
+    <div class="day-list">
+      <div *ngFor="let day of daysOfWeek; let i = index" class="day-group">
+        <h3>{{ day }}</h3>
+        <div class="form-group">
+          <label>Disponible</label>
+          <input
+            type="checkbox"
+            [formControl]="getAvailabilityControl(i)"
+            (change)="onAvailabilityChange(i)"
+          >
+        </div>
+
+        <div class="time-group" *ngIf="availabilities.at(i).get('isAvailable')?.value">
+          <div class="form-group">
+            <label for="startTime_{{i}}">Heure de début</label>
+            <input
+              id="startTime_{{i}}"
+              type="time"
+              [formControl]="getStartTimeControl(i)"
+              [class.invalid]="availabilities.at(i).get('startTime')?.invalid && availabilities.at(i).get('startTime')?.touched"
+            >
+            <div *ngIf="availabilities.at(i).get('startTime')?.invalid && availabilities.at(i).get('startTime')?.touched" class="error">
+              Format d'heure invalide
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="endTime_{{i}}">Heure de fin</label>
+            <input
+              id="endTime_{{i}}"
+              type="time"
+              [formControl]="getEndTimeControl(i)"
+              [class.invalid]="availabilities.at(i).get('endTime')?.invalid && availabilities.at(i).get('endTime')?.touched"
+            >
+            <div *ngIf="availabilities.at(i).get('endTime')?.invalid && availabilities.at(i).get('endTime')?.touched" class="error">
+              Format d'heure invalide
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="breakStart_{{i}}">Début de pause</label>
+            <input
+              id="breakStart_{{i}}"
+              type="time"
+              [formControl]="getBreakStartControl(i)"
+              [class.invalid]="availabilities.at(i).get('breakStart')?.invalid && availabilities.at(i).get('breakStart')?.touched"
+            >
+            <div *ngIf="availabilities.at(i).get('breakStart')?.invalid && availabilities.at(i).get('breakStart')?.touched" class="error">
+              Format d'heure invalide
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="breakEnd_{{i}}">Fin de pause</label>
+            <input
+              id="breakEnd_{{i}}"
+              type="time"
+              [formControl]="getBreakEndControl(i)"
+              [class.invalid]="availabilities.at(i).get('breakEnd')?.invalid && availabilities.at(i).get('breakEnd')?.touched"
+            >
+            <div *ngIf="availabilities.at(i).get('breakEnd')?.invalid && availabilities.at(i).get('breakEnd')?.touched" class="error">
+              Format d'heure invalide
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="button-group">
+      <button type="submit">
+        {{ isLoading ? 'Enregistrement...' : 'Enregistrer' }}
+      </button>
+      <button type="button" (click)="resetForm()" [disabled]="isLoading">Réinitialiser</button>
+    </div>
+
+    <div *ngIf="successMessage" class="success-message">{{ successMessage }}</div>
+    <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
+  </form>
+</div>

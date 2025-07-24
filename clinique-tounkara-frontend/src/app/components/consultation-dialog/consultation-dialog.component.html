@@ -1,0 +1,43 @@
+<h2 mat-dialog-title>{{ data.consultation ? 'Modifier la consultation' : 'Créer une consultation' }}</h2>
+<mat-dialog-content>
+  <mat-form-field appearance="fill">
+    <mat-label>Dossier médical</mat-label>
+    <mat-select [(ngModel)]="consultation.dossier_medical_id" required>
+      @for (record of data.medicalRecords; track record.id) {
+        @if (record.patient && record.patient.user && record.patient.user.nom && record.patient.user.prenom) {
+          <mat-option [value]="record.id">
+            {{ record.patient.user.nom }} {{ record.patient.user.prenom }}
+          </mat-option>
+        }
+      }
+    </mat-select>
+    <mat-error *ngIf="!consultation.dossier_medical_id">Le dossier médical est requis</mat-error>
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Date</mat-label>
+    <input matInput type="date" [(ngModel)]="consultation.date" required>
+    <mat-error *ngIf="!consultation.date">La date est requise</mat-error>
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Symptômes</mat-label>
+    <textarea matInput [(ngModel)]="consultation.symptomes" required rows="4"></textarea>
+    <mat-error *ngIf="!consultation.symptomes">Les symptômes sont requis</mat-error>
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Diagnostic</mat-label>
+    <textarea matInput [(ngModel)]="consultation.diagnostic" required rows="4"></textarea>
+    <mat-error *ngIf="!consultation.diagnostic">Le diagnostic est requis</mat-error>
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Recommandations</mat-label>
+    <textarea matInput [(ngModel)]="consultation.recommandations" rows="4"></textarea>
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Notes</mat-label>
+    <textarea matInput [(ngModel)]="consultation.notes" rows="4"></textarea>
+  </mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Annuler</button>
+  <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="!consultation.dossier_medical_id || !consultation.date || !consultation.symptomes || !consultation.diagnostic">Enregistrer</button>
+</mat-dialog-actions>

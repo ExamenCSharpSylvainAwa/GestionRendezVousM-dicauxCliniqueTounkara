@@ -1,1 +1,12 @@
-<p>billing works!</p>
+<mat-card>
+  <mat-card-title>Facturation</mat-card-title>
+  <mat-card-content>
+    <mat-list>
+      @for (invoice of invoices; track invoice.id) {
+        <mat-list-item>
+          N°: {{ invoice.numero }} - Montant: {{ invoice.montant_total }} FCFA
+        </mat-list-item>
+      }
+    </mat-list>
+  </mat-card-content>
+</mat-card>

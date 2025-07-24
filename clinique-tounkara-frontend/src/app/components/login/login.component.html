@@ -1,1 +1,42 @@
-<p>login works!</p>
+
+<div class="login-container">
+  <!-- En-tête avec un design attractif -->
+  <div class="header">
+    <h1 class="title">Bienvenue à la Clinique</h1>
+    <p class="subtitle">Connectez-vous pour accéder à votre compte</p>
+  </div>
+
+  <!-- Carte avec un design amélioré -->
+  <mat-card class="login-card">
+    <mat-card-header>
+      <mat-card-title class="card-title">Connexion</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form (ngSubmit)="onSubmit()" class="login-form">
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput placeholder="Email" [(ngModel)]="credentials.email" name="email" required>
+        </mat-form-field>
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Mot de passe</mat-label>
+          <input matInput type="password" placeholder="Mot de passe" [(ngModel)]="credentials.password" name="password" required>
+        </mat-form-field>
+       <button mat-raised-button color="primary" type="submit" class="submit-button" [disabled]="isLoading">
+        @if (!isLoading) {
+          Connexion
+        } @else {
+          <mat-spinner diameter="20" color="primary"></mat-spinner>
+        }
+      </button>
+
+      </form>
+      <div class="register-link">
+        <p>Pas encore inscrit ?</p>
+        <button mat-button (click)="goToRegister()" color="accent" class="register-button">S'inscrire</button>
+      </div>
+      @if (errorMessage) {
+        <p class="error-message">{{ errorMessage }}</p>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

@@ -1,0 +1,150 @@
+.dashboard-container {
+  font-family: 'Roboto', sans-serif;
+  color: #333;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: #f9f9f9;
+}
+
+.welcome-section {
+  text-align: center;
+  padding: 50px 20px;
+  background: linear-gradient(135deg, #3498db, #27ae60);
+  color: white;
+  border-radius: 10px;
+  margin-bottom: 40px;
+  animation: fadeIn 1.5s ease-in-out;
+
+  .welcome-title {
+    font-size: 36px;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+
+  .welcome-subtitle {
+    font-size: 18px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
+.services-section {
+  margin-bottom: 40px;
+
+  h2 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 30px;
+    font-size: 28px;
+  }
+
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+
+  .service-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    background-color: white;
+    padding: 20px;
+    text-align: center;
+
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .service-icon {
+      background-color: #27ae60;
+      color: white;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 15px;
+    }
+  }
+}
+
+.testimonials-section {
+  margin-bottom: 40px;
+
+  h2 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 30px;
+    font-size: 28px;
+  }
+
+  .testimonial-item {
+    border-left: 5px solid #27ae60;
+    padding-left: 15px;
+    margin-bottom: 20px;
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+
+    .testimonial-author {
+      color: #2c3e50;
+      font-size: 14px;
+    }
+  }
+}
+
+.contact-section {
+  text-align: center;
+  padding: 30px;
+  background-color: #ecf0f1;
+  border-radius: 10px;
+
+  h2 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    font-size: 28px;
+  }
+
+  .contact-details {
+    p {
+      margin: 10px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      mat-icon {
+        margin-right: 10px;
+        color: #27ae60;
+      }
+
+      a {
+        color: #3498db;
+        text-decoration: none;
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+}
+
+// Animation
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+// Responsivité
+@media (max-width: 768px) {
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .welcome-section {
+    padding: 30px 10px;
+  }
+}

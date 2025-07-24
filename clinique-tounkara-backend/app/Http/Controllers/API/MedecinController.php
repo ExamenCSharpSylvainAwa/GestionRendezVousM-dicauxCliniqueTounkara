@@ -21,7 +21,7 @@ class MedecinController extends Controller
             'user_id' => 'required|exists:users,id',
             'specialite' => 'required|string',
             'numero_ordre' => 'required|unique:medecins',
-            'horaire_consultation' => 'required|json',
+            'horaire_consultation' => 'sometimes|json',
             'tarif_consultation' => 'required|numeric',
         ]);
 
@@ -42,7 +42,7 @@ class MedecinController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'specialite' => 'sometimes|required|string',
-            'horaire_consultation' => 'sometimes|required|json',
+            'horaire_consultation' => 'sometimes|json', // Supprimer 'required'
             'tarif_consultation' => 'sometimes|required|numeric',
             'disponible' => 'sometimes|boolean',
         ]);
@@ -59,5 +59,15 @@ class MedecinController extends Controller
     {
         $medecin->delete();
         return response()->json(['message' => 'Médecin supprimé avec succès']);
+
+    }
+
+    public function getSchedules($medecinId, Request $request)
+    {
+        $date = $request->query('date');
+        $schedules = Schedule::where('medecin_id', $medecinId)
+            ->whereDate('date', $date)
+            ->get(['id', 'medecin_id', 'date', 'start_time', 'end_time', 'is_break']);
+        return response()->json($schedules);
     }
 }
