@@ -1,0 +1,347 @@
+/* Variables CSS pour faciliter la gestion des couleurs */
+:root {
+  --primary-color: #007bff; /* Bleu Bootstrap ou similaire */
+  --accent-color: #28a745; /* Vert pour succès/accent */
+  --warn-color: #dc3545; /* Rouge pour erreur/avertissement */
+  --info-color: #17a2b8; /* Cyan pour info */
+  --text-color: #333;
+  --secondary-text-color: #6c757d;
+  --background-color: #f8f9fa; /* Gris clair */
+  --card-background: #ffffff;
+}
+
+body {
+  background-color: var(--background-color);
+  font-family: 'Roboto', sans-serif; /* Assurez-vous que Roboto est importé dans votre projet Angular */
+  color: var(--text-color);
+}
+
+.appointments-page-container {
+  max-width: 960px; /* Augmentation de la largeur maximale pour un meilleur affichage sur desktop */
+  margin: 40px auto;
+  padding: 20px;
+  background-color: var(--background-color);
+  border-radius: 8px;
+}
+
+.page-title {
+  text-align: center;
+  color: var(--primary-color);
+  font-size: 2.2em;
+  margin-bottom: 30px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  position: relative;
+  padding-bottom: 10px;
+}
+
+.page-title::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background-color: var(--primary-color);
+  border-radius: 2px;
+}
+
+/* --- États de l'interface (Chargement, Erreur, Aucun Rendez-vous) --- */
+
+.loading-state,
+.error-state,
+.no-appointments-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 20px;
+  text-align: center;
+}
+
+.loading-state mat-spinner {
+  margin-bottom: 20px;
+  color: var(--primary-color);
+}
+
+.loading-state p {
+  font-size: 1.1em;
+  color: var(--secondary-text-color);
+}
+
+.error-state .error-card {
+  width: 100%;
+  max-width: 400px;
+  background-color: #fff3cd; /* Jaune clair pour erreur */
+  border: 1px solid #ffeeba;
+  color: #856404; /* Texte foncé pour erreur */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.error-state .error-card mat-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+}
+
+.error-state .error-card mat-icon {
+  font-size: 3.5em;
+  height: 1.5em;
+  width: 1.5em;
+  color: var(--warn-color);
+}
+
+.error-state .error-card p {
+  font-size: 1.1em;
+  margin: 0;
+  color: var(--warn-color);
+  font-weight: 500;
+}
+
+.error-state .error-card button {
+  margin-top: 15px;
+}
+
+.no-appointments-state mat-card {
+  width: 100%;
+  max-width: 500px;
+  background-color: var(--card-background);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+}
+
+.no-appointments-state mat-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  padding: 30px;
+}
+
+.no-appointments-state mat-icon {
+  font-size: 4em;
+  height: 1.2em;
+  width: 1.2em;
+  color: var(--info-color);
+  margin-bottom: 10px;
+}
+
+.no-appointments-state p {
+  font-size: 1.2em;
+  font-weight: 500;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.no-appointments-state .sub-message {
+  font-size: 0.95em;
+  color: var(--secondary-text-color);
+  margin-top: 5px;
+}
+
+
+/* --- Liste des rendez-vous --- */
+.appointments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Responsive grid */
+  gap: 25px;
+  padding-top: 20px;
+}
+
+.appointment-card {
+  border-radius: 12px;
+  overflow: hidden; /* Pour s'assurer que border-radius est appliqué aux enfants */
+  background-color: var(--card-background);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.appointment-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.appointment-card mat-card-header {
+  padding: 20px 25px;
+  border-bottom: 1px solid #eee;
+  background-color: #f7f7f7;
+  display: flex;
+  align-items: center;
+}
+
+.doctor-avatar {
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.doctor-avatar mat-icon {
+  font-size: 28px;
+  height: 28px;
+  width: 28px;
+}
+
+.doctor-name {
+  font-size: 1.4em;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 2px;
+}
+
+.doctor-specialty {
+  font-size: 0.95em;
+  color: var(--secondary-text-color);
+  font-style: italic;
+}
+
+.appointment-details {
+  padding: 20px 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1em;
+  color: var(--text-color);
+}
+
+.detail-item mat-icon {
+  color: var(--secondary-text-color); /* Couleur par défaut pour les icônes de détails */
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.detail-item span:first-of-type { /* Label for the detail */
+  font-weight: 500;
+  min-width: 100px; /* Pour aligner les labels */
+}
+
+.detail-item strong {
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+/* --- Badges de statut de paiement --- */
+.payment-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.85em;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: white;
+  letter-spacing: 0.5px;
+  min-width: 90px;
+  justify-content: center;
+}
+
+.payment-paid {
+  background-color: var(--accent-color); /* Vert pour payé */
+}
+
+.payment-pending {
+  background-color: var(--info-color); /* Cyan pour en attente */
+}
+
+.payment-failed {
+  background-color: var(--warn-color); /* Rouge pour échec */
+}
+
+.card-actions {
+  padding: 15px 25px 20px;
+  display: flex;
+  flex-wrap: wrap; /* Permet aux boutons de passer à la ligne */
+  gap: 10px;
+  justify-content: flex-end; /* Aligner les actions à droite */
+  border-top: 1px solid #eee;
+  background-color: #f7f7f7;
+}
+
+.card-actions button {
+  padding: 8px 15px;
+  font-size: 0.9em;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-actions button mat-icon {
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+}
+
+.payment-completed-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background-color: rgba(40, 167, 69, 0.1); /* Vert très léger */
+  color: var(--accent-color);
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+.payment-completed-message .success-icon {
+  color: var(--accent-color);
+  font-size: 20px;
+  height: 20px;
+  width: 20px;
+}
+
+/* --- Responsive adjustments --- */
+@media (max-width: 768px) {
+  .appointments-page-container {
+    margin: 20px auto;
+    padding: 15px;
+  }
+
+  .page-title {
+    font-size: 1.8em;
+    margin-bottom: 25px;
+  }
+
+  .appointments-grid {
+    grid-template-columns: 1fr; /* Une seule colonne sur petits écrans */
+    gap: 20px;
+  }
+
+  .appointment-card mat-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .doctor-avatar {
+    margin-right: 0;
+    margin-bottom: 10px;
+  }
+
+  .card-actions {
+    justify-content: center; /* Centrer les boutons sur petits écrans */
+  }
+
+  .card-actions button {
+    width: 100%; /* Boutons pleine largeur */
+  }
+}

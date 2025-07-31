@@ -1,3 +1,398 @@
-mat-card {
-  margin: 10px;
+
+// Variables
+$primary-color: #6366f1;
+$success-color: #10b981;
+$warning-color: #f59e0b;
+$error-color: #ef4444;
+$info-color: #3b82f6;
+$background-light: #f8fafc;
+$text-primary: #1e293b;
+$text-secondary: #64748b;
+$border-color: #e2e8f0;
+$shadow-light: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+$shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$shadow-large: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+// Mixins
+@mixin card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-large;
+  }
+}
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin responsive-grid($columns, $gap: 1rem) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(#{$columns}, 1fr));
+  gap: $gap;
+}
+
+// Container principal
+.billing-header {
+  background: linear-gradient(135deg, $primary-color 0%, #8b5cf6 100%);
+  color: white;
+  padding: 2rem;
+  margin: -2rem -2rem 2rem -2rem;
+  border-radius: 0 0 16px 16px;
+
+  .header-content {
+    @include flex-between;
+    max-width: 1200px;
+    margin: 0 auto;
+
+    .page-title {
+      @include flex-center;
+      gap: 0.75rem;
+      font-size: 2rem;
+      font-weight: 600;
+      margin: 0;
+      
+      mat-icon {
+        font-size: 2.5rem;
+        width: 2.5rem;
+        height: 2.5rem;
+      }
+    }
+
+    .export-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      
+      &:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      &[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+// Grille des statistiques
+.stats-grid {
+  @include responsive-grid(250px, 1.5rem);
+  margin-bottom: 2rem;
+
+  .stat-card {
+    @include card-hover;
+    border-radius: 12px;
+    overflow: hidden;
+    border: none;
+    
+    &.stat-card-primary {
+      background: linear-gradient(135deg, $primary-color, #8b5cf6);
+      color: white;
+    }
+    
+    &.stat-card-success {
+      background: linear-gradient(135deg, $success-color, #059669);
+      color: white;
+    }
+    
+    &.stat-card-info {
+      background: linear-gradient(135deg, $info-color, #2563eb);
+      color: white;
+    }
+    
+    &.stat-card-warning {
+      background: linear-gradient(135deg, $warning-color, #d97706);
+      color: white;
+    }
+
+    mat-card-content {
+      padding: 1.5rem !important;
+    }
+
+    .stat-content {
+      @include flex-center;
+      gap: 1rem;
+
+      .stat-icon {
+        @include flex-center;
+        width: 3rem;
+        height: 3rem;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        backdrop-filter: blur(10px);
+
+        mat-icon {
+          font-size: 1.5rem;
+          width: 1.5rem;
+          height: 1.5rem;
+        }
+      }
+
+      .stat-info {
+        text-align: left;
+
+        h3 {
+          margin: 0;
+          font-size: 1.75rem;
+          font-weight: 700;
+          line-height: 1.2;
+        }
+
+        p {
+          margin: 0.25rem 0 0 0;
+          opacity: 0.9;
+          font-size: 0.875rem;
+          font-weight: 500;
+        }
+      }
+    }
+  }
+}
+
+// Carte des filtres
+.filters-card {
+  margin-bottom: 2rem;
+  border-radius: 12px;
+  box-shadow: $shadow-light;
+
+  .filters-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 1rem;
+    align-items: end;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .search-field,
+    .status-field,
+    .date-field {
+      mat-form-field {
+        width: 100%;
+      }
+    }
+
+    .clear-filters-btn {
+      height: fit-content;
+      padding: 0.75rem 1rem;
+      
+      mat-icon {
+        margin-right: 0.5rem;
+      }
+    }
+  }
+}
+
+// Container de chargement
+.loading-container {
+  @include flex-center;
+  flex-direction: column;
+  padding: 4rem 2rem;
+  gap: 1rem;
+
+  mat-spinner {
+    margin-bottom: 1rem;
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: 1rem;
+  }
+}
+
+// Carte du tableau
+.table-card {
+  border-radius: 12px;
+  box-shadow: $shadow-light;
+  overflow: hidden;
+
+  mat-card-header {
+    background: $background-light;
+    padding: 1.5rem;
+    border-bottom: 1px solid $border-color;
+
+    mat-card-title {
+      color: $text-primary;
+      font-weight: 600;
+      font-size: 1.25rem;
+      margin: 0;
+    }
+  }
+
+  mat-card-content {
+    padding: 0 !important;
+  }
+
+  .table-container {
+    overflow-x: auto;
+    max-height: 600px;
+    overflow-y: auto;
+
+    .invoices-table {
+      width: 100%;
+      
+      th {
+        background: $background-light;
+        color: $text-primary;
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 1rem;
+        border-bottom: 1px solid $border-color;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      td {
+        padding: 1rem;
+        border-bottom: 1px solid $border-color;
+        vertical-align: middle;
+      }
+
+      .invoice-row {
+        transition: background-color 0.2s ease;
+        
+        &:hover {
+          background-color: rgba($primary-color, 0.05);
+        }
+      }
+
+      // Colonnes spécifiques
+      .invoice-number {
+        @include flex-center;
+        gap: 0.5rem;
+        font-weight: 600;
+        color: $primary-color;
+
+        mat-icon {
+          font-size: 1.125rem;
+          width: 1.125rem;
+          height: 1.125rem;
+          color: $primary-color;
+        }
+      }
+
+      .patient-info {
+        @include flex-center;
+        justify-content: flex-start;
+        gap: 0.5rem;
+
+        mat-icon {
+          color: $text-secondary;
+          font-size: 1.125rem;
+          width: 1.125rem;
+          height: 1.125rem;
+        }
+
+        span {
+          font-weight: 500;
+        }
+      }
+
+      .medecin-info {
+        .medecin-name {
+          font-weight: 500;
+          color: $text-primary;
+          margin-bottom: 0.25rem;
+        }
+
+        .specialite {
+          font-size: 0.75rem;
+          color: $text-secondary;
+          background: rgba($info-color, 0.1);
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          display: inline-block;
+        }
+      }
+
+      .date-info {
+        @include flex-center;
+        justify-content: flex-start;
+        gap: 0.5rem;
+        color: $text-secondary;
+
+        mat-icon {
+          font-size: 1rem;
+          width: 1rem;
+          height: 1rem;
+        }
+      }
+
+      .amount {
+        font-weight: 600;
+        font-size: 1.125rem;
+        color: $success-color;
+      }
+
+      .actions-buttons {
+        @include flex-center;
+        gap: 0.25rem;
+
+        button {
+          &:disabled {
+            opacity: 0.5;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Message aucune donnée
+.no-data {
+  @include flex-center;
+  flex-direction: column;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: $text-secondary;
+
+  mat-icon {
+    font-size: 4rem;
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  p {
+    margin: 0;
+    max-width: 400px;
+    font-size: 1rem;
+    line-height: 1.5;
+    opacity: 0.8;
+  }
+  a {
+    color: $primary-color;
+    text-decoration: underline;
+    font-weight: 500;
+
+    &:hover {
+      text-decoration: none;
+    }
+  }
 }

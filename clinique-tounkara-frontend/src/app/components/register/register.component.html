@@ -1,8 +1,7 @@
-
 <div class="register-container">
   <!-- En-tête avec un design attractif -->
   <div class="header">
-    <h1 class="title">Inscription à la Clinique</h1>
+    <h1 class="title">Inscription à la Clinique Tounkara</h1>
     <p class="subtitle">Créez votre compte pour accéder à nos services</p>
   </div>
 
@@ -13,83 +12,83 @@
     </mat-card-header>
     <mat-card-content>
       <form (ngSubmit)="onSubmit()" class="register-form">
-        <mat-form-field appearance="fill" class="full-width">
+        <mat-form-field appearance="outline" class="full-width">
           <mat-label>Nom</mat-label>
-          <input matInput placeholder="Nom" [(ngModel)]="userData.nom" name="nom" required>
+          <input matInput placeholder="Votre nom" [(ngModel)]="userData.nom" name="nom" required>
         </mat-form-field>
-        <mat-form-field appearance="fill" class="full-width">
+        <mat-form-field appearance="outline" class="full-width">
           <mat-label>Prénom</mat-label>
-          <input matInput placeholder="Prénom" [(ngModel)]="userData.prenom" name="prenom" required>
+          <input matInput placeholder="Votre prénom" [(ngModel)]="userData.prenom" name="prenom" required>
         </mat-form-field>
-        <mat-form-field appearance="fill" class="full-width">
+        <mat-form-field appearance="outline" class="full-width">
           <mat-label>Email</mat-label>
-          <input matInput placeholder="Email" [(ngModel)]="userData.email" name="email" required>
+          <input matInput type="email" placeholder="votre.email@exemple.com" [(ngModel)]="userData.email" name="email" required>
         </mat-form-field>
-        <mat-form-field appearance="fill" class="full-width">
+        <mat-form-field appearance="outline" class="full-width">
           <mat-label>Mot de passe</mat-label>
-          <input matInput type="password" placeholder="Mot de passe" [(ngModel)]="userData.password" name="password" required>
+          <input matInput type="password" placeholder="Votre mot de passe" [(ngModel)]="userData.password" name="password" required>
         </mat-form-field>
-        <mat-form-field appearance="fill" class="full-width">
+        <mat-form-field appearance="outline" class="full-width">
           <mat-label>Confirmer mot de passe</mat-label>
           <input matInput type="password" placeholder="Confirmer mot de passe" [(ngModel)]="userData.password_confirmation" name="password_confirmation" required>
         </mat-form-field>
-        <mat-form-field appearance="fill" class="full-width">
+        <mat-form-field appearance="outline" class="full-width">
           <mat-label>Téléphone</mat-label>
-          <input matInput placeholder="Téléphone" [(ngModel)]="userData.telephone" name="telephone" required>
+          <input matInput type="tel" placeholder="Ex: 77 123 45 67" [(ngModel)]="userData.telephone" name="telephone" required>
         </mat-form-field>
-        <mat-form-field appearance="fill" class="full-width">
+        <mat-form-field appearance="outline" class="full-width">
           <mat-label>Adresse</mat-label>
-          <input matInput placeholder="Adresse" [(ngModel)]="userData.adresse" name="adresse" required>
+          <input matInput placeholder="Votre adresse complète" [(ngModel)]="userData.adresse" name="adresse" required>
         </mat-form-field>
-        <mat-form-field appearance="fill" class="full-width">
-          <mat-label>Rôle</mat-label>
-          <mat-select [(ngModel)]="userData.role" name="role" required (ngModelChange)="onRoleChange()">
-            <mat-option value="patient">Patient</mat-option>
-            <mat-option value="medecin">Médecin</mat-option>
-            <mat-option value="personnel">Personnel</mat-option>
-            <mat-option value="administrateur">Administrateur</mat-option>
+
+        <!-- Champs spécifiques au rôle "patient" (maintenant toujours visibles) -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Date de naissance</mat-label>
+          <input matInput [matDatepicker]="picker" [max]="maxDate" placeholder="Choisir une date" [(ngModel)]="userData.date_naissance" name="date_naissance" required>
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Sexe</mat-label>
+          <mat-select [(ngModel)]="userData.sexe" name="sexe" required>
+            <mat-option value="M">Masculin</mat-option>
+            <mat-option value="F">Féminin</mat-option>
+            
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Groupe sanguin</mat-label>
+          <mat-select [(ngModel)]="userData.groupe_sanguin" name="groupe_sanguin">
+            <mat-option value="A+">A+</mat-option>
+            <mat-option value="A-">A-</mat-option>
+            <mat-option value="B+">B+</mat-option>
+            <mat-option value="B-">B-</mat-option>
+            <mat-option value="AB+">AB+</mat-option>
+            <mat-option value="AB-">AB-</mat-option>
+            <mat-option value="O+">O+</mat-option>
+            <mat-option value="O-">O-</mat-option>
           </mat-select>
         </mat-form-field>
 
-        <!-- Champs spécifiques au rôle "patient" -->
-        @if (userData.role === 'patient') {
-          <mat-form-field appearance="fill" class="full-width">
-            <mat-label>Date de naissance</mat-label>
-            <input matInput [matDatepicker]="picker" placeholder="Choisir une date" [(ngModel)]="userData.date_naissance" name="date_naissance" required>
-            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-            <mat-datepicker #picker></mat-datepicker>
-          </mat-form-field>
-          <mat-form-field appearance="fill" class="full-width">
-            <mat-label>Sexe</mat-label>
-            <mat-select [(ngModel)]="userData.sexe" name="sexe" required>
-              <mat-option value="M">Masculin</mat-option>
-              <mat-option value="F">Féminin</mat-option>
-              <mat-option value="A">Autre</mat-option>
-            </mat-select>
-          </mat-form-field>
-          <mat-form-field appearance="fill" class="full-width">
-            <mat-label>Groupe sanguin</mat-label>
-            <mat-select [(ngModel)]="userData.groupe_sanguin" name="groupe_sanguin">
-              <mat-option value="A+">A+</mat-option>
-              <mat-option value="A-">A-</mat-option>
-              <mat-option value="B+">B+</mat-option>
-              <mat-option value="B-">B-</mat-option>
-              <mat-option value="AB+">AB+</mat-option>
-              <mat-option value="AB-">AB-</mat-option>
-              <mat-option value="O+">O+</mat-option>
-              <mat-option value="O-">O-</mat-option>
-            </mat-select>
-          </mat-form-field>
+        <!-- Message d'erreur affiché avant les boutons -->
+        @if (errorMessage) {
+          <div class="error-message-box">
+            <mat-icon class="error-icon">error_outline</mat-icon>
+            <p>{{ errorMessage }}</p>
+          </div>
         }
 
         <div class="button-container">
-          <button mat-raised-button color="primary" type="submit" class="submit-button">S'inscrire</button>
+          <button mat-raised-button color="primary" type="submit" class="submit-button" [disabled]="isLoading">
+            @if (!isLoading) {
+              S'inscrire
+            } @else {
+              <mat-spinner diameter="20" color="accent"></mat-spinner>
+            }
+          </button>
           <button mat-button (click)="onCancel()" color="warn" class="cancel-button">Annuler</button>
         </div>
       </form>
-      @if (errorMessage) {
-        <p class="error-message" style="color: red; font-size: 14px;">{{ errorMessage }}</p>
-      }
     </mat-card-content>
   </mat-card>
 </div>

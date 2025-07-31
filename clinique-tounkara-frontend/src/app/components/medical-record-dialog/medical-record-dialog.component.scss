@@ -1,9 +1,159 @@
-mat-form-field {
-  width: 100%;
+// Variables de style (cohérentes avec manage-appointments et consultation-dialog)
+$primary-color: #4A90E2; // Bleu moderne
+$accent-color: #2ECC71; // Vert vif
+$warn-color: #E74C3C; // Rouge élégant
+$text-color: #2D3748; // Gris foncé pour le texte
+$light-text-color: #718096; // Gris clair pour le texte secondaire
+$border-color: #E2E8F0; // Bordure subtile
+$background-light: #F7FAFC; // Fond clair
+$background-card: #FFFFFF; // Fond des cartes
+$shadow-light: 0 2px  tubs4px rgba(0, 0, 0, 0.05);
+$shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+// Mixin pour les arrondis
+@mixin border-radius($radius: 12px) {
+  border-radius: $radius;
 }
-mat-dialog-actions {
+
+// Mixin pour les transitions fluides
+@mixin transition($properties...) {
+  transition: $properties 0.3s ease-in-out;
+}
+
+// Conteneur principal du dialogue
+.dialog-container {
+  font-family: 'Inter', sans-serif;
+  background-color: $background-card;
+  padding: 24px;
+  @include border-radius(16px);
+  box-shadow: $shadow-medium;
+}
+
+// Titre du dialogue
+.dialog-title {
+  font-size: 1.8em;
+  color: $primary-color;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 16px;
+  text-align: center;
+
+  @media (max-width: 600px) {
+    font-size: 1.5em;
+  }
+}
+
+// Contenu du dialogue
+.dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  background-color: $background-light;
+  @include border-radius(12px);
+}
+
+// Champs de formulaire
+.form-field {
+  width: 100%;
+  position: relative;
+
+  mat-form-field {
+    width: 100%;
+    font-size: 0.95em;
+
+    .mat-form-field-wrapper {
+      padding-bottom: 0;
+    }
+
+    mat-label {
+      color: $text-color;
+      font-weight: 500;
+    }
+
+    mat-icon {
+      color: $light-text-color;
+      margin-right: 12px;
+    }
+
+    .mat-form-field-outline {
+      @include transition(border-color);
+      border-color: $border-color;
+    }
+
+    &:hover .mat-form-field-outline {
+      border-color: $primary-color;
+    }
+  }
+
+  mat-error {
+    font-size: 0.85em;
+    color: $warn-color;
+  }
+}
+
+// Actions du dialogue
+.dialog-actions {
+  padding: 20px;
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 12px;
+  background-color: $background-card;
+  border-top: 1px solid $border-color;
+  @include border-radius(0 0 12px 12px);
+
+  .action-button {
+    padding: 10px 20px;
+    font-weight: 600;
+    @include border-radius(8px);
+    @include transition(transform, box-shadow);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: $shadow-light;
+    }
+
+    &[color="primary"] {
+      background: linear-gradient(45deg, $primary-color, lighten($primary-color, 10%));
+      color: #fff;
+    }
+
+    &[color="warn"] {
+      border-color: $warn-color;
+      color: $warn-color;
+    }
+
+    &[disabled] {
+      background: #B0BEC5;
+      cursor: not-allowed;
+    }
+
+    mat-spinner {
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 600px) {
+  .dialog-container {
+    padding: 16px;
+  }
+
+  .dialog-content {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .dialog-actions {
+    padding: 16px;
+    gap: 8px;
+
+    .action-button {
+      padding: 8px 16px;
+      font-size: 0.9em;
+    }
+  }
 }

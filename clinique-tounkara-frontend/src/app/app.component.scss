@@ -2,7 +2,9 @@
 .app-container {
   height: 100vh;
   width: 100vw;
-  overflow: hidden;
+  // overflow: hidden; /* <-- SUPPRIMÉ OU COMMENTÉ : C'est la cause du problème de défilement */
+  overflow-y: auto; /* Permet le défilement vertical si le contenu de l'application dépasse */
+  overflow-x: hidden; /* Cache le défilement horizontal si non désiré */
   background-color: #f5f5f5;
 }
 
@@ -11,10 +13,13 @@
   display: block;
   height: 100vh;
   width: 100vw;
+  // overflow: hidden; /* Assurez-vous que :host n'a pas non plus de 'overflow: hidden' s'il est le conteneur racine */
 }
 
 // Styles pour les pages sans sidebar (login, register, etc.)
+// Cette règle est bonne, mais elle ne peut pas annuler un 'overflow: hidden' sur un parent.
 router-outlet + * {
-  height: 100vh;
+  height: 100vh; /* Assure que le contenu prend au moins 100% de la hauteur du viewport */
   width: 100vw;
+  // Si le contenu de ces pages est très long, 'overflow-y: auto' sur le composant lui-même (comme register-container) est essentiel.
 }

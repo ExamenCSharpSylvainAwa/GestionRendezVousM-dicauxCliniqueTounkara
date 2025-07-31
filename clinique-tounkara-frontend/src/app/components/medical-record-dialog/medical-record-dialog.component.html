@@ -1,17 +1,28 @@
-<h2 mat-dialog-title>Créer un dossier médical</h2>
-<mat-dialog-content>
-  <mat-form-field appearance="fill">
-    <mat-label>Sélectionner un patient</mat-label>
-    <mat-select [(ngModel)]="selectedPatientId" required>
-      @for (patient of data.patients; track patient.id) {
-        @if (patient.user) {
-          <mat-option [value]="patient.id">{{ patient.user.nom }} {{ patient.user.prenom }}</mat-option>
+<div class="dialog-container">
+  <h2 mat-dialog-title class="dialog-title">Créer un dossier médical</h2>
+  <mat-dialog-content class="dialog-content">
+    <mat-form-field appearance="outline" class="form-field">
+      <mat-label>Sélectionner un patient</mat-label>
+      <mat-select [(ngModel)]="selectedPatientId" required>
+        <mat-option value="" disabled>Sélectionner un patient</mat-option>
+        @for (patient of data.patients; track patient.id) {
+          @if (patient.user && patient.user.nom && patient.user.prenom) {
+            <mat-option [value]="patient.id">
+              {{ patient.user.nom }} {{ patient.user.prenom }}
+            </mat-option>
+          }
         }
-      }
-    </mat-select>
-  </mat-form-field>
-</mat-dialog-content>
-<mat-dialog-actions align="end">
-  <button mat-button (click)="onCancel()">Annuler</button>
-  <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="!selectedPatientId">Créer</button>
-</mat-dialog-actions>
+      </mat-select>
+      <mat-icon matPrefix>person</mat-icon>
+      <mat-error *ngIf="!selectedPatientId">Veuillez sélectionner un patient</mat-error>
+    </mat-form-field>
+  </mat-dialog-content>
+  <mat-dialog-actions class="dialog-actions">
+    <button mat-stroked-button color="warn" (click)="onCancel()" class="action-button">Annuler</button>
+    <button mat-raised-button color="primary" (click)="onSubmit()" 
+            [disabled]="!selectedPatientId || isLoading" class="action-button">
+      <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+      <span *ngIf="!isLoading">Créer</span>
+    </button>
+  </mat-dialog-actions>
+</div>

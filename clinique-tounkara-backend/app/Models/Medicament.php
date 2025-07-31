@@ -8,10 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class Medicament extends Model
 {
     use HasFactory;
-    protected $fillable = ['nom', 'posologie', 'duree', 'instructions'];
+    protected $fillable = ['prescription_id', 'nom', 'posologie', 'duree', 'instructions'];
 
-    public function prescriptions()
+    public function prescription()
     {
-        return $this->belongsToMany(Prescription::class);
+        return $this->belongsTo(Prescription::class);
     }
 }

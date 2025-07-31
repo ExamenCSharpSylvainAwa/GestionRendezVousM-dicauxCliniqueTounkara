@@ -1,5 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { ApiService, Medecin, Appointment, PaginatedResponse, User } from '../../services/api.service';
+import { ApiService, Medecin, Appointment, PaginatedResponse, User, CreateAppointmentRequest } from '../../services/api.service';
 import { ScheduleService } from '../../services/schedule.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -21,8 +21,8 @@ import { tap, catchError } from 'rxjs/operators';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { CancelAppointmentDialogComponent, CancelDialogResult, CancelDialogData } from '../cancel-appointment-dialog/cancel-appointment-dialog.component';
+import { animate, style, transition, trigger, stagger, query } from '@angular/animations';
 
-// Interfaces (inchangées)
 interface AppointmentForm {
   patient_id: number;
   medecin_id: number;
@@ -67,14 +67,119 @@ interface Schedule {
     MatDividerModule,
     FormsModule,
     CommonModule,
-    MatSnackBarModule
+    MatSnackBarModule,
   ],
   templateUrl: './appointments.component.html',
-  styleUrls: ['./appointments.component.scss']
+  styleUrls: ['./appointments.component.scss'],
+  animations: [
+    trigger('pageAnimation', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(20px)' }),
+        animate('600ms ease-out', style({ opacity: 1, transform: 'translateY(0)' })),
+      ]),
+    ]),
+    trigger('fadeInUp', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(20px)' }),
+        animate('800ms ease-out', style({ opacity: 1, transform: 'translateY(0)' })),
+      ]),
+    ]),
+    trigger('slideInLeft', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateX(-30px)' }),
+        animate('800ms ease-out', style({ opacity: 1, transform: 'translateX(0)' })),
+      ]),
+    ]),
+    trigger('slideInRight', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateX(30px)' }),
+        animate('800ms ease-out', style({ opacity: 1, transform: 'translateX(0)' })),
+      ]),
+    ]),
+    trigger('slideInDown', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(-20px)' }),
+        animate('800ms ease-out', style({ opacity: 1, transform: 'translateY(0)' })),
+      ]),
+    ]),
+    trigger('slideInUp', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(20px)' }),
+        animate('600ms ease-out', style({ opacity: 1, transform: 'translateY(0)' })),
+      ]),
+    ]),
+    trigger('fadeInOut', [
+      transition(':enter', [
+        style({ opacity: 0 }),
+        animate('400ms ease-in', style({ opacity: 1 })),
+      ]),
+      transition(':leave', [
+        animate('400ms ease-out', style({ opacity: 0 })),
+      ]),
+    ]),
+    trigger('pulse', [
+      transition('* => *', [
+        animate('600ms ease-in-out', style({ transform: 'scale(1.02)' })),
+        animate('600ms ease-in-out', style({ transform: 'scale(1)' })),
+      ]),
+    ]),
+    trigger('shakeAnimation', [
+      transition(':enter', [
+        style({ transform: 'translateX(0)' }),
+        animate('500ms ease', style({ transform: 'translateX(5px)' })),
+        animate('500ms ease', style({ transform: 'translateX(-5px)' })),
+        animate('500ms ease', style({ transform: 'translateX(0)' })),
+      ]),
+    ]),
+    trigger('floatAnimation', [
+      transition('* => *', [
+        animate('3000ms ease-in-out', style({ transform: 'translateY(-10px)' })),
+        animate('3000ms ease-in-out', style({ transform: 'translateY(0)' })),
+      ]),
+    ]),
+    trigger('staggerAnimation', [
+      transition(':enter', [
+        query(':enter', [
+          style({ opacity: 0, transform: 'translateY(20px)' }),
+          stagger('100ms', [
+            animate('600ms ease-out', style({ opacity: 1, transform: 'translateY(0)' })),
+          ]),
+        ], { optional: true }),
+      ]),
+    ]),
+    trigger('listItemAnimation', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(20px)' }),
+        animate('600ms ease-out', style({ opacity: 1, transform: 'translateY(0)' })),
+      ]),
+    ]),
+    trigger('buttonScale', [
+      transition(':enter', [
+        style({ transform: 'scale(1)' }),
+        animate('300ms ease', style({ transform: 'scale(1.05)' })),
+      ]),
+      transition(':leave', [
+        animate('300ms ease', style({ transform: 'scale(1)' })),
+      ]),
+    ]),
+    trigger('buttonHover', [
+      transition(':enter', [
+        style({ transform: 'scale(1)' }),
+        animate('300ms ease', style({ transform: 'scale(1.05)' })),
+      ]),
+      transition(':leave', [
+        animate('300ms ease', style({ transform: 'scale(1)' })),
+      ]),
+    ]),
+  ],
 })
 export class AppointmentsComponent implements OnInit {
   medecins$: Observable<PaginatedResponse<Medecin>>;
   appointments: Appointment[] = [];
+  filteredAppointments: Appointment[] = [];
+  selectedFilterDate: string | null = null;
+  selectedStatusFilter: string = '';
+  selectedDoctorFilter: string = '';
   selectedMedecinId: number = 0;
   selectedPatientId: number = 0;
   errorMessage: string = '';
@@ -83,17 +188,14 @@ export class AppointmentsComponent implements OnInit {
   currentUser: User | null = null;
   isUserLoaded: boolean = false;
   isReady: boolean = false;
-
   selectedMedecinTarif: number | null = null;
-
   noServiceMessage: string = '';
   isCheckingSchedule: boolean = false;
   availabilityMessage: string = '';
   successMessage: string = '';
-
   private debounceTimer: any;
-
   minDate: Date;
+  appointmentStats: { icon: string; count: number; label: string; class: string }[] = [];
 
   newAppointment: AppointmentForm = {
     patient_id: 0,
@@ -101,7 +203,7 @@ export class AppointmentsComponent implements OnInit {
     date: '',
     heure: '',
     motif: '',
-    statut: 'en_attente'
+    statut: 'en_attente',
   };
 
   availableHours: string[] = [];
@@ -113,29 +215,17 @@ export class AppointmentsComponent implements OnInit {
     private snackBar: MatSnackBar,
     private dialog: MatDialog
   ) {
-    console.log('ApiService injecté:', this.apiService);
-    console.log('ScheduleService injecté:', this.scheduleService);
-    if (!this.apiService) {
-      console.error('ApiService non injecté');
-    } else {
-      console.log('HttpClient disponible dans ApiService:', !!this.apiService['http']);
-    }
     this.medecins$ = this.apiService.getMedecins();
     this.currentUser$ = this.apiService.getProfile();
     this.minDate = new Date();
   }
 
   ngOnInit() {
-    console.log('AppointmentsComponent initialized');
-    console.log('ApiService available:', !!this.apiService);
-
     this.loadAppointments();
     this.currentUser$.subscribe({
       next: (response: any) => {
-        console.log('User profile response:', response);
         let userData: User = response && response.user ? response.user : response;
         this.currentUser = userData;
-
         if (userData && userData.id) {
           if (userData.role === 'patient') {
             this.getPatientIdFromUser(userData.id);
@@ -144,15 +234,13 @@ export class AppointmentsComponent implements OnInit {
             this.isUserLoaded = true;
             this.isReady = true;
           }
-          console.log('User loaded - ID:', userData.id, 'Role:', userData.role);
+          this.cdr.detectChanges();
         }
-        this.cdr.detectChanges();
       },
       error: (error: HttpErrorResponse) => {
-        console.error('Error loading user profile:', error);
         this.errorMessage = `Erreur: ${error.status} - ${error.message || 'Aucune description'}`;
         this.cdr.detectChanges();
-      }
+      },
     });
   }
 
@@ -162,83 +250,167 @@ export class AppointmentsComponent implements OnInit {
         const userPatient = patientsResponse.data.find((patient: any) =>
           patient.user && patient.user.id === userId
         );
-
         if (userPatient) {
-          console.log('Patient trouvé:', userPatient);
           this.newAppointment.patient_id = userPatient.id;
           this.selectedPatientId = userPatient.id;
           this.isUserLoaded = true;
           this.isReady = true;
         } else {
-          console.error('Aucun patient trouvé pour user_id:', userId);
           this.errorMessage = 'Aucun profil patient trouvé pour cet utilisateur';
         }
         this.cdr.detectChanges();
       },
       error: (error: HttpErrorResponse) => {
-        console.error('Erreur lors de la récupération des patients:', error);
         this.errorMessage = 'Erreur lors de la récupération des informations patient';
         this.cdr.detectChanges();
-      }
+      },
     });
   }
 
   loadAppointments() {
-    console.log('Appel à getAppointments');
-    const appointmentsObservable = this.apiService.getAppointments();
-    appointmentsObservable.subscribe({
+    this.apiService.getAppointments().subscribe({
       next: (response: PaginatedResponse<Appointment>) => {
-        console.log('Réponse getAppointments:', response);
-        this.appointments = response.data || [];
+        this.appointments = (response.data || []).sort((a, b) => {
+          return new Date(b.date_heure).getTime() - new Date(a.date_heure).getTime();
+        });
+        this.filteredAppointments = this.appointments.length > 0 ? [this.appointments[0]] : [];
+        this.initializeStats();
+        this.cdr.detectChanges();
       },
       error: (error: HttpErrorResponse) => {
-        console.error('Erreur dans getAppointments:', error);
         this.errorMessage = `Erreur: ${error.status} - ${error.message || 'Aucune description'}`;
-      }
+        this.cdr.detectChanges();
+      },
     });
   }
 
-  private validateForm(): boolean {
-    console.log('Validation - patient_id:', this.newAppointment.patient_id, 'isUserLoaded:', this.isUserLoaded);
+  private initializeStats() {
+    this.appointmentStats = [
+      {
+        icon: 'hourglass_empty',
+        count: this.appointments.filter(a => a.statut === 'en_attente').length,
+        label: 'En attente',
+        class: 'status-en_attente',
+      },
+      {
+        icon: 'check_circle',
+        count: this.appointments.filter(a => a.statut === 'confirme').length,
+        label: 'Confirmés',
+        class: 'status-confirme',
+      },
+      {
+        icon: 'cancel',
+        count: this.appointments.filter(a => a.statut === 'annule').length,
+        label: 'Annulés',
+        class: 'status-annule',
+      },
+      {
+        icon: 'done_all',
+        count: this.appointments.filter(a => a.statut === 'termine').length,
+        label: 'Terminés',
+        class: 'status-termine',
+      },
+    ];
+  }
 
+  onFilterDateChange(event: any) {
+    this.selectedFilterDate = event.value ? event.value.toISOString().split('T')[0] : null;
+    this.filterAppointments();
+  }
+
+  onStatusFilterChange() {
+    this.filterAppointments();
+  }
+
+  onDoctorFilterChange() {
+    this.filterAppointments();
+  }
+
+  private filterAppointments() {
+    let filtered = this.appointments;
+
+    if (this.selectedFilterDate) {
+      filtered = filtered.filter(appointment => {
+        const appointmentDate = new Date(appointment.date_heure).toISOString().split('T')[0];
+        return appointmentDate === this.selectedFilterDate;
+      });
+    }
+
+    if (this.selectedStatusFilter) {
+      filtered = filtered.filter(appointment => appointment.statut === this.selectedStatusFilter);
+    }
+
+    if (this.selectedDoctorFilter) {
+      filtered = filtered.filter(appointment => appointment.medecin_id === +this.selectedDoctorFilter);
+    }
+
+    this.filteredAppointments = filtered.sort((a, b) => {
+      return new Date(b.date_heure).getTime() - new Date(a.date_heure).getTime();
+    });
+
+    this.cdr.detectChanges();
+  }
+
+  resetAllFilters() {
+    this.selectedFilterDate = null;
+    this.selectedStatusFilter = '';
+    this.selectedDoctorFilter = '';
+    this.filterAppointments();
+  }
+
+  hasActiveFilters(): boolean {
+    return !!this.selectedFilterDate || !!this.selectedStatusFilter || !!this.selectedDoctorFilter;
+  }
+
+  getEmptyStateMessage(): string {
+    if (this.hasActiveFilters()) {
+      return 'Aucun rendez-vous ne correspond aux filtres sélectionnés. Essayez de modifier ou réinitialiser les filtres.';
+    }
+    return 'Vous n\'avez aucun rendez-vous planifié pour le moment.';
+  }
+
+  getStatusIcon(status: string): string {
+    if (status.includes('⚠️') || status === 'en_attente') {
+      return 'warning';
+    } else if (status.includes('❌') || status === 'annule') {
+      return 'error';
+    } else if (status.includes('✅') || status === 'confirme' || status === 'termine') {
+      return 'check_circle';
+    }
+    return 'info';
+  }
+
+  private validateForm(): boolean {
     if (!this.newAppointment.patient_id || this.newAppointment.patient_id <= 0) {
       this.errorMessage = 'Aucun patient sélectionné ou ID invalide';
       return false;
     }
-
     if (!this.newAppointment.medecin_id || this.newAppointment.medecin_id <= 0) {
       this.errorMessage = 'Veuillez sélectionner un médecin';
       return false;
     }
-
     if (!this.newAppointment.date) {
       this.errorMessage = 'La date est requise';
       return false;
     }
-
     if (!this.newAppointment.heure) {
       this.errorMessage = 'L\'heure est requise';
       return false;
     }
-
     const appointmentDateTime = new Date(`${this.newAppointment.date}T${this.newAppointment.heure}`);
     const now = new Date();
-
     if (appointmentDateTime <= now) {
       this.errorMessage = 'La date et l\'heure du rendez-vous doivent être dans le futur';
       return false;
     }
-
     if (!this.newAppointment.motif.trim()) {
       this.errorMessage = 'Le motif est requis';
       return false;
     }
-
     if (this.selectedMedecinTarif === null || this.selectedMedecinTarif === undefined) {
       this.errorMessage = 'Impossible de récupérer le tarif du médecin';
       return false;
     }
-
     return true;
   }
 
@@ -247,19 +419,15 @@ export class AppointmentsComponent implements OnInit {
     if (this.currentUser) {
       if (this.currentUser.role === 'patient') {
         patientId = this.newAppointment.patient_id;
-      } else {
-        patientId = 0;
       }
     }
-
     this.newAppointment = {
       patient_id: patientId,
       medecin_id: 0,
       date: '',
       heure: '',
       motif: '',
-      tarif: undefined,
-      statut: 'en_attente'
+      statut: 'en_attente',
     };
     this.availableHours = [];
     this.noServiceMessage = '';
@@ -270,7 +438,6 @@ export class AppointmentsComponent implements OnInit {
   }
 
   getCurrentUserName(): string {
-    console.log('getCurrentUserName called, currentUser:', this.currentUser);
     return this.currentUser ? `${this.currentUser.nom} ${this.currentUser.prenom}` : 'Utilisateur non connecté';
   }
 
@@ -281,7 +448,7 @@ export class AppointmentsComponent implements OnInit {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   }
 
@@ -294,7 +461,7 @@ export class AppointmentsComponent implements OnInit {
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   }
 
@@ -310,7 +477,6 @@ export class AppointmentsComponent implements OnInit {
       this.selectedMedecinTarif = null;
       return Promise.resolve();
     }
-
     return new Promise((resolve, reject) => {
       this.isCheckingSchedule = true;
       this.availableHours = [];
@@ -318,13 +484,10 @@ export class AppointmentsComponent implements OnInit {
       this.availabilityMessage = '';
       this.errorMessage = '';
       this.selectedMedecinTarif = null;
-
       this.medecins$.subscribe({
         next: (medecinsResponse) => {
           const selectedMedecin = medecinsResponse.data.find(m => m.id === this.newAppointment.medecin_id);
-
           if (!selectedMedecin || !selectedMedecin.user || !selectedMedecin.user.id) {
-            console.error('Médecin sélectionné ou user_id non trouvé:', selectedMedecin);
             this.noServiceMessage = 'Erreur: informations du médecin non disponibles.';
             this.availableHours = [];
             this.availabilityMessage = '';
@@ -333,83 +496,66 @@ export class AppointmentsComponent implements OnInit {
             resolve();
             return;
           }
-
           this.selectedMedecinTarif = selectedMedecin.tarif_consultation !== undefined ? selectedMedecin.tarif_consultation : null;
-          console.log('Tarif du médecin sélectionné:', this.selectedMedecinTarif);
-
           const userId = selectedMedecin.user.id;
           const medecinName = `${selectedMedecin.user.nom} ${selectedMedecin.user.prenom}`;
-
           const timeoutDuration = 10000;
           const timeoutPromise = new Promise((_, timeoutReject) => {
             setTimeout(() => timeoutReject(new Error('Timeout')), timeoutDuration);
           });
-
           Promise.race([
             forkJoin({
               schedules: this.scheduleService.getScheduleByMedecinAndDate(userId, this.newAppointment.date),
-              existingAppointments: this.getExistingAppointments(this.newAppointment.medecin_id, this.newAppointment.date)
+              existingAppointments: this.getExistingAppointments(this.newAppointment.medecin_id, this.newAppointment.date),
             }).toPromise(),
-            timeoutPromise
-          ]).then((result: any) => {
-            const { schedules, existingAppointments } = result;
-
-            console.log('Schedules récupérés:', schedules);
-            console.log('Rendez-vous existants:', existingAppointments);
-
-            if (!schedules || schedules.length === 0) {
-              this.noServiceMessage = `Le Dr ${medecinName} n'est pas en service le ${this.formatDate(this.newAppointment.date)}.`;
+            timeoutPromise,
+          ])
+            .then((result: any) => {
+              const { schedules, existingAppointments } = result;
+              if (!schedules || schedules.length === 0) {
+                this.noServiceMessage = `Le Dr ${medecinName} n'est pas en service le ${this.formatDate(this.newAppointment.date)}.`;
+                this.availableHours = [];
+                this.availabilityMessage = '';
+                this.isCheckingSchedule = false;
+                this.cdr.detectChanges();
+                resolve();
+                return;
+              }
+              const workingSchedules = schedules.filter((schedule: Schedule) => schedule.is_available);
+              if (workingSchedules.length === 0) {
+                this.noServiceMessage = `Le Dr ${medecinName} n'a pas d'horaires de travail disponibles le ${this.formatDate(this.newAppointment.date)}.`;
+                this.availableHours = [];
+                this.availabilityMessage = '';
+                this.isCheckingSchedule = false;
+                this.cdr.detectChanges();
+                resolve();
+                return;
+              }
+              this.processAvailableSlots(workingSchedules, existingAppointments, medecinName);
+              this.isCheckingSchedule = false;
+              this.cdr.detectChanges();
+              resolve();
+            })
+            .catch((error) => {
+              this.noServiceMessage =
+                error.message === 'Timeout'
+                  ? `Délai d'attente dépassé lors de la vérification des horaires du Dr ${medecinName}.`
+                  : `Impossible de vérifier les horaires du Dr ${medecinName} pour le ${this.formatDate(this.newAppointment.date)}. Veuillez réessayer.`;
               this.availableHours = [];
               this.availabilityMessage = '';
               this.isCheckingSchedule = false;
               this.cdr.detectChanges();
-              resolve();
-              return;
-            }
-
-            const workingSchedules = schedules.filter((schedule: Schedule) => schedule.is_available);
-
-            if (workingSchedules.length === 0) {
-              this.noServiceMessage = `Le Dr ${medecinName} n'a pas d'horaires de travail disponibles le ${this.formatDate(this.newAppointment.date)}.`;
-              this.availableHours = [];
-              this.availabilityMessage = '';
-              this.isCheckingSchedule = false;
-              this.cdr.detectChanges();
-              resolve();
-              return;
-            }
-
-            this.processAvailableSlots(workingSchedules, existingAppointments, medecinName);
-
-            this.isCheckingSchedule = false;
-            this.cdr.detectChanges();
-            resolve();
-
-          }).catch((error) => {
-            console.error('Erreur lors de la récupération des données:', error);
-
-            if (error.message === 'Timeout') {
-              this.noServiceMessage = `Délai d'attente dépassé lors de la vérification des horaires du Dr ${medecinName}.`;
-            } else {
-              this.noServiceMessage = `Impossible de vérifier les horaires du Dr ${medecinName} pour le ${this.formatDate(this.newAppointment.date)}. Veuillez réessayer.`;
-            }
-
-            this.availableHours = [];
-            this.availabilityMessage = '';
-            this.isCheckingSchedule = false;
-            this.cdr.detectChanges();
-            reject(error);
-          });
+              reject(error);
+            });
         },
         error: (error) => {
-          console.error('Erreur lors de la récupération des médecins:', error);
           this.noServiceMessage = 'Erreur lors de la récupération des informations des médecins.';
           this.availableHours = [];
           this.availabilityMessage = '';
           this.isCheckingSchedule = false;
           this.cdr.detectChanges();
           reject(error);
-        }
+        },
       });
     });
   }
@@ -419,21 +565,18 @@ export class AppointmentsComponent implements OnInit {
       .filter(appointment => appointment.statut === 'confirme' || appointment.statut === 'en_attente')
       .map(appointment => {
         const appointmentDate = new Date(appointment.date_heure);
-        const timeString = appointmentDate.toLocaleTimeString('fr-FR', {
+        return appointmentDate.toLocaleTimeString('fr-FR', {
           hour: '2-digit',
           minute: '2-digit',
-          hour12: false
+          hour12: false,
         });
-        return timeString;
       });
 
-    console.log('Heures occupées (statut "confirme" ou "en_attente"):', occupiedHours);
+    console.log('Créneaux occupés pour cette date:', occupiedHours);
 
     const allSlots = this.generateHourSlots();
-    console.log('Tous les créneaux:', allSlots);
-
     const slotsInWorkingTime = allSlots.filter(hour => this.isTimeInWorkingSchedule(hour, workingSchedules));
-    const occupiedSlotsInWorkingTime = slotsInWorkingTime.filter(hour => occupiedHours.includes(hour));
+
     const availableSlotsInWorkingTime = slotsInWorkingTime.filter(hour => !occupiedHours.includes(hour));
 
     const today = new Date();
@@ -450,15 +593,13 @@ export class AppointmentsComponent implements OnInit {
       finalAvailableSlots = availableSlotsInWorkingTime.filter(hour => {
         const [hourNum, minuteNum] = hour.split(':').map(Number);
         const slotTimeInMinutes = hourNum * 60 + minuteNum;
-        return slotTimeInMinutes > currentTimeInMinutes + 30; // Laisser 30 minutes de marge
+        return slotTimeInMinutes > currentTimeInMinutes + 30;
       });
     }
 
-    console.log('Créneaux dans les horaires de travail:', slotsInWorkingTime);
-    console.log('Créneaux occupés dans les horaires de travail:', occupiedSlotsInWorkingTime);
-    console.log('Créneaux disponibles finaux:', finalAvailableSlots);
-
     this.availableHours = finalAvailableSlots;
+
+    const occupiedSlotsInWorkingTime = slotsInWorkingTime.filter(hour => occupiedHours.includes(hour));
 
     if (slotsInWorkingTime.length === 0) {
       this.noServiceMessage = `Le Dr ${medecinName} n'a pas d'horaires de travail le ${this.formatDate(this.newAppointment.date)}.`;
@@ -476,7 +617,7 @@ export class AppointmentsComponent implements OnInit {
       this.noServiceMessage = '';
       if (occupiedSlotsInWorkingTime.length > 0) {
         const occupiedTimesText = occupiedSlotsInWorkingTime.join(', ');
-        this.availabilityMessage = `⚠️ Créneaux déjà pris : ${occupiedTimesText}`;
+        this.availabilityMessage = `⚠️ Créneaux déjà pris : ${occupiedTimesText} | ✅ ${finalAvailableSlots.length} créneaux disponibles`;
       } else {
         this.availabilityMessage = `✅ ${finalAvailableSlots.length} créneaux disponibles`;
       }
@@ -485,27 +626,22 @@ export class AppointmentsComponent implements OnInit {
 
   private isTimeInWorkingSchedule(timeSlot: string, workingSchedules: Schedule[]): boolean {
     const [hourNum, minuteNum] = timeSlot.split(':').map(Number);
-
     return workingSchedules.some(schedule => {
       const [startHour, startMinute] = schedule.start_time.split(':').map(Number);
       const [endHour, endMinute] = schedule.end_time.split(':').map(Number);
-
       const slotMinutes = hourNum * 60 + minuteNum;
       const startMinutes = startHour * 60 + startMinute;
       const endMinutes = endHour * 60 + endMinute;
-
       if (slotMinutes >= startMinutes && slotMinutes < endMinutes) {
         if (schedule.break_start && schedule.end_break) {
           const [breakStartHour, breakStartMinute] = schedule.break_start.split(':').map(Number);
           const [breakEndHour, breakEndMinute] = schedule.end_break.split(':').map(Number);
-
           const breakStartMinutes = breakStartHour * 60 + breakStartMinute;
           const breakEndMinutes = breakEndHour * 60 + breakEndMinute;
-
           if (
             (slotMinutes >= breakStartMinutes && slotMinutes < breakEndMinutes) ||
-            ((slotMinutes + 30) > breakStartMinutes && (slotMinutes + 30) <= breakEndMinutes) ||
-            (slotMinutes < breakStartMinutes && (slotMinutes + 30) > breakEndMinutes)
+            (slotMinutes + 30 > breakStartMinutes && slotMinutes + 30 <= breakEndMinutes) ||
+            (slotMinutes < breakStartMinutes && slotMinutes + 30 > breakEndMinutes)
           ) {
             return false;
           }
@@ -534,84 +670,62 @@ export class AppointmentsComponent implements OnInit {
     this.availableHours = [];
     this.availabilityMessage = '';
     this.errorMessage = '';
+    this.noServiceMessage = '';
+
+    console.log('Date changée vers:', this.newAppointment.date);
+
     this.debounceGetAvailableHours();
   }
 
   async onSubmit() {
-    console.log('🔥 1. onSubmit() APPELÉE !');
-    console.log('🔥 2. Form data:', this.newAppointment);
-    console.log('🔥 3. isReady:', this.isReady);
-
     if (!this.isReady) {
-      console.log('❌ 4. Form not ready');
       this.errorMessage = 'Formulaire non prêt. Veuillez patienter.';
       return;
     }
-    console.log('✅ 4. Form is ready');
-
     if (!this.validateForm()) {
-      console.log('❌ 5. Form validation failed');
-      console.log('❌ 5. ErrorMessage:', this.errorMessage);
       return;
     }
-    console.log('✅ 5. Form validation passed');
-
     this.isLoading = true;
     this.errorMessage = '';
     this.successMessage = '';
-
     try {
-      console.log('🔄 6. Refreshing availability before submit...');
-
       await this.getAvailableHours();
-
       if (!this.availableHours.includes(this.newAppointment.heure)) {
-        console.log('❌ 7. Selected hour no longer available after refresh');
         this.errorMessage = 'Le créneau sélectionné n\'est plus disponible. Veuillez sélectionner un nouveau créneau.';
         this.isLoading = false;
         return;
       }
-      console.log('✅ 7. Selected hour is still available');
-
-      console.log('🔄 8. Creating appointment datetime...');
       const appointmentDateTime = new Date(`${this.newAppointment.date}T${this.newAppointment.heure}`);
-
       if (isNaN(appointmentDateTime.getTime())) {
         throw new Error('Format de date et heure invalide');
       }
-      console.log('✅ 8. DateTime created:', appointmentDateTime);
-
-      const appointmentData = {
+      if (this.selectedMedecinTarif === null || this.selectedMedecinTarif === undefined) {
+        this.errorMessage = 'Tarif du médecin non disponible';
+        this.isLoading = false;
+        return;
+      }
+      const appointmentData: CreateAppointmentRequest = {
         patient_id: this.newAppointment.patient_id,
         medecin_id: this.newAppointment.medecin_id,
         date_heure: appointmentDateTime.toISOString(),
         motif: this.newAppointment.motif.trim(),
-        tarif: this.selectedMedecinTarif !== null ? this.selectedMedecinTarif : undefined,
-        statut: 'en_attente' as const
+        tarif: this.selectedMedecinTarif,
       };
-
-      console.log('🚀 9. Sending appointment data:', appointmentData);
-
       this.apiService.createAppointment(appointmentData).subscribe({
         next: (response: any) => {
-          console.log('✅ 10. SUCCESS - Response received:', response);
           this.handleSuccessfulCreation(response);
         },
         error: (error: any) => {
-          console.log('❌ 10. ERROR - Error received:', error);
           this.handleCreationError(error);
-        }
+        },
       });
-
     } catch (error) {
-      console.error('❌ EXCEPTION in onSubmit:', error);
       this.errorMessage = 'Erreur lors de la préparation des données';
       this.isLoading = false;
     }
   }
 
   private handleSuccessfulCreation(response: any) {
-    console.log('Appointment created successfully:', response);
     this.resetForm();
     this.loadAppointments();
     this.isLoading = false;
@@ -620,26 +734,19 @@ export class AppointmentsComponent implements OnInit {
   }
 
   private handleCreationError(error: any) {
-    console.error('Creation error:', error);
     this.isLoading = false;
-
     if (error.shouldRefreshSchedule) {
-      console.log('🔄 Refreshing schedule due to error...');
       this.refreshAvailableHours();
     }
-
-    // Réinitialiser les champs date, heure et motif en cas d'erreur spécifique
     if (error.status === 422 || error.status === 409 || (error.status === 400 && error.error?.error_code === 'MEDECIN_NON_DISPONIBLE')) {
       this.newAppointment.date = '';
       this.newAppointment.heure = '';
       this.newAppointment.motif = '';
-      this.availableHours = []; // Vider les heures disponibles
-      this.availabilityMessage = ''; // Vider le message de disponibilité
-      this.noServiceMessage = ''; // Vider le message de non-service
-      this.cdr.detectChanges(); // Forcer la détection des changements pour rafraîchir l'UI
+      this.availableHours = [];
+      this.availabilityMessage = '';
+      this.noServiceMessage = '';
+      this.cdr.detectChanges();
     }
-
-
     if (error.status === 422) {
       if (error.error && error.error.message) {
         this.errorMessage = error.error.message;
@@ -662,15 +769,13 @@ export class AppointmentsComponent implements OnInit {
     } else {
       this.errorMessage = error.message || 'Erreur lors de la création du rendez-vous';
     }
-
     this.showSnackBar(this.errorMessage, 'error');
-    console.error('Erreur détaillée:', error);
   }
 
   private showSnackBar(message: string, panelClass: string = 'info') {
     this.snackBar.open(message, 'Fermer', {
       duration: 5000,
-      panelClass: [`snackbar-${panelClass}`]
+      panelClass: [`snackbar-${panelClass}`],
     });
   }
 
@@ -679,6 +784,9 @@ export class AppointmentsComponent implements OnInit {
     this.availableHours = [];
     this.availabilityMessage = '';
     this.errorMessage = '';
+    this.noServiceMessage = '';
+
+    console.log('Médecin changé vers:', this.newAppointment.medecin_id);
 
     this.debounceGetAvailableHours();
   }
@@ -687,10 +795,27 @@ export class AppointmentsComponent implements OnInit {
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
     }
-
     this.debounceTimer = setTimeout(() => {
       this.getAvailableHours();
     }, 300);
+  }
+
+  forceRefreshAvailableHours() {
+    console.log('Force refresh des créneaux disponibles...');
+    this.availableHours = [];
+    this.noServiceMessage = '';
+    this.availabilityMessage = '';
+    this.errorMessage = '';
+
+    if (this.newAppointment.medecin_id && this.newAppointment.date) {
+      this.getAvailableHours()
+        .then(() => {
+          console.log('Créneaux disponibles après refresh:', this.availableHours);
+        })
+        .catch(error => {
+          console.error('Erreur lors du refresh:', error);
+        });
+    }
   }
 
   refreshAvailableHours() {
@@ -705,81 +830,130 @@ export class AppointmentsComponent implements OnInit {
     return this.apiService.getAppointments().pipe(
       map((response: PaginatedResponse<Appointment>) => {
         const filteredAppointments = response.data.filter(appointment => {
-          const appointmentDate = new Date(appointment.date_heure);
-          const appointmentDateString = appointmentDate.toISOString().split('T')[0];
-          const isMatch = appointment.medecin_id === medecinId && appointmentDateString === date;
+          const appointmentDate = new Date(appointment.date_heure).toISOString().split('T')[0];
+          const isCorrectMedecin = appointment.medecin_id === medecinId;
+          const isCorrectDate = appointmentDate === date;
+          const isNotCancelled = appointment.statut !== 'annule';
 
-          console.log(`Appointment ${appointment.id}: medecin_id=${appointment.medecin_id}, date=${appointmentDateString}, statut=${appointment.statut}, match=${isMatch}`);
+          console.log(
+            `RDV ${appointment.id}: medecin=${appointment.medecin_id}/${medecinId}, date=${appointmentDate}/${date}, statut=${appointment.statut}, inclus=${isCorrectMedecin && isCorrectDate && isNotCancelled}`
+          );
 
-          return isMatch;
+          return isCorrectMedecin && isCorrectDate && isNotCancelled;
         });
 
-        console.log('Filtered existing appointments:', filteredAppointments);
+        console.log(`RDV existants pour médecin ${medecinId} le ${date}:`, filteredAppointments);
         return filteredAppointments;
       }),
       catchError(error => {
-        console.error('Error fetching existing appointments:', error);
+        console.error('Erreur lors de la récupération des RDV existants:', error);
         return throwError(() => new Error('Could not fetch existing appointments.'));
       })
     );
   }
 
-  viewAppointmentDetails(appointmentId: number): void {
-    console.log(`Voir les détails du rendez-vous avec l'ID: ${appointmentId}`);
-    this.showSnackBar(`Détails du rendez-vous ${appointmentId} (fonction à implémenter)`, 'info');
-  }
-
-  /**
-   * Annule un rendez-vous spécifique.
-   * @param appointment L'objet rendez-vous complet à annuler.
-   */
   cancelAppointment(appointment: Appointment): void {
-    console.log(`Tentative d'annulation du rendez-vous avec l'ID: ${appointment.id}`);
-    this.isLoading = true;
-    this.errorMessage = '';
-
-    // Préparer les données pour la modale
+    if (!appointment.id) {
+      this.showSnackBar('Erreur: ID du rendez-vous manquant', 'error');
+      return;
+    }
+    if (appointment.statut === 'annule') {
+      this.showSnackBar('Ce rendez-vous est déjà annulé', 'warn');
+      return;
+    }
+    if (appointment.statut === 'termine') {
+      this.showSnackBar('Impossible d\'annuler un rendez-vous terminé', 'warn');
+      return;
+    }
     const dialogData: CancelDialogData = {
-      appointmentId: appointment.id!,
-      // CORRECTION ICI : Accès aux noms via l'objet 'user' imbriqué
-      patientName: appointment.patient?.user ? `${appointment.patient.user.prenom} ${appointment.patient.user.nom}` : 'N/A',
-      doctorName: appointment.medecin?.user ? `Dr. ${appointment.medecin.user.prenom} ${appointment.medecin.user.nom}` : 'N/A',
-      appointmentDate: this.formatDateTime(appointment.date_heure) // Formater la date et l'heure
+      appointmentId: appointment.id,
+      patientName: appointment.patient?.user
+        ? `${appointment.patient.user.prenom || ''} ${appointment.patient.user.nom || ''}`.trim()
+        : 'Patient non spécifié',
+      doctorName: appointment.medecin?.user
+        ? `Dr. ${appointment.medecin.user.prenom || ''} ${appointment.medecin.user.nom || ''}`.trim()
+        : 'Médecin non spécifié',
+      appointmentDate: this.formatDateTime(appointment.date_heure),
     };
-
     const dialogRef = this.dialog.open(CancelAppointmentDialogComponent, {
-      width: '400px',
-      data: dialogData // Passez l'objet dialogData préparé
+      width: '450px',
+      maxWidth: '90vw',
+      disableClose: true,
+      data: dialogData,
     });
-
     dialogRef.afterClosed().subscribe((result: CancelDialogResult | undefined) => {
       if (result && result.confirmed) {
-        const reason = result.reason || 'Annulé par l\'utilisateur';
-
-        this.apiService.cancelAppointment(appointment.id!, reason).subscribe({
-          next: (response) => {
-            console.log('Rendez-vous annulé avec succès:', response);
-            this.showSnackBar('Rendez-vous annulé et créneau libéré !', 'success');
-            this.loadAppointments();
-            this.isLoading = false;
-          },
-          error: (error: any) => {
-            console.error('Erreur lors de l\'annulation du rendez-vous:', error);
-            let errorMessage = 'Impossible d\'annuler le rendez-vous. Veuillez réessayer.';
-            if (error.type === 'NOT_FOUND') {
-              errorMessage = 'Rendez-vous non trouvé.';
-            } else if (error.message) {
-              errorMessage = error.message;
-            }
-            this.showSnackBar(errorMessage, 'error');
-            this.isLoading = false;
-          }
-        });
-      } else {
-        console.log('Annulation du rendez-vous annulée par l\'utilisateur.');
-        this.isLoading = false;
+        this.performCancellation(appointment.id!, result.reason || 'Annulé par l\'utilisateur');
       }
     });
+  }
+
+  private performCancellation(appointmentId: number, reason: string): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.apiService.cancelAppointment(appointmentId, reason).subscribe({
+      next: (response) => {
+        this.showSnackBar('Rendez-vous annulé avec succès ! Le créneau est maintenant disponible.', 'success');
+        this.loadAppointments();
+        if (this.newAppointment.medecin_id && this.newAppointment.date) {
+          this.refreshAvailableHours();
+        }
+        this.isLoading = false;
+      },
+      error: (error: any) => {
+        this.handleCancellationError(error);
+        this.isLoading = false;
+      },
+    });
+  }
+
+  private handleCancellationError(error: any): void {
+    let errorMessage = 'Impossible d\'annuler le rendez-vous. Veuillez réessayer.';
+    if (error.status) {
+      switch (error.status) {
+        case 404:
+          errorMessage = 'Rendez-vous non trouvé. Il a peut-être déjà été supprimé.';
+          this.loadAppointments();
+          break;
+        case 400:
+          errorMessage = error.error?.message || 'Demande invalide. Le rendez-vous ne peut pas être annulé.';
+          break;
+        case 403:
+          errorMessage = 'Vous n\'avez pas l\'autorisation d\'annuler ce rendez-vous.';
+          break;
+        case 409:
+          errorMessage = 'Ce rendez-vous a déjà été annulé ou modifié.';
+          this.loadAppointments();
+          break;
+        case 422:
+          errorMessage = error.error?.errors ? Object.values(error.error.errors).flat().join(', ') : error.error?.message || '';
+          break;
+        case 500:
+          errorMessage = 'Erreur serveur. Veuillez réessayer plus tard.';
+          break;
+        default:
+          errorMessage = error.error?.message || errorMessage;
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    if (error.error?.error_code) {
+      switch (error.error.error_code) {
+        case 'APPOINTMENT_NOT_FOUND':
+          errorMessage = 'Le rendez-vous n\'existe plus dans le système.';
+          this.loadAppointments();
+          break;
+        case 'APPOINTMENT_ALREADY_CANCELLED':
+          errorMessage = 'Ce rendez-vous est déjà annulé.';
+          this.loadAppointments();
+          break;
+        case 'APPOINTMENT_CANNOT_BE_CANCELLED':
+          errorMessage = 'Ce rendez-vous ne peut plus être annulé (trop tard ou déjà terminé).';
+          break;
+      }
+    }
+    this.errorMessage = errorMessage;
+    this.showSnackBar(errorMessage, 'error');
   }
 
   getAppointmentStatusClass(statut: 'en_attente' | 'confirme' | 'annule' | 'termine'): string {
@@ -795,6 +969,11 @@ export class AppointmentsComponent implements OnInit {
       default:
         return '';
     }
+  }
+
+  clearFilterDate() {
+    this.selectedFilterDate = null;
+    this.filterAppointments();
   }
 
   getAppointmentStatusLabel(statut: 'en_attente' | 'confirme' | 'annule' | 'termine'): string {

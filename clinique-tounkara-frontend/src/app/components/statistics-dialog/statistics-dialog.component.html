@@ -1,0 +1,342 @@
+
+<h2 mat-dialog-title class="dialog-title">{{ reportTitle }}</h2>
+<mat-dialog-content class="dialog-content">
+  <div class="period-info">
+    <strong>Période :</strong>
+    <ng-container [ngSwitch]="period">
+      <span *ngSwitchCase="'today'">Aujourd'hui</span>
+      <span *ngSwitchCase="'this_week'">Cette semaine</span>
+      <span *ngSwitchCase="'this_month'">Ce mois-ci</span>
+      <span *ngSwitchCase="'this_year'">Cette année</span>
+      <span *ngSwitchCase="'last_7_days'">7 derniers jours</span>
+      <span *ngSwitchCase="'last_30_days'">30 derniers jours</span>
+      <span *ngSwitchCase="'custom'">Du {{ startDate | date:'dd/MM/yyyy' }} au {{ endDate | date:'dd/MM/yyyy' }}</span>
+      <span *ngSwitchCase="'all_time'">Depuis le début</span>
+      <span *ngSwitchDefault>Non spécifié</span>
+    </ng-container>
+  </div>
+
+  <!-- Statistiques Générales -->
+  <ng-container *ngIf="reportType === 'general'">
+    <h3 class="section-title">Statistiques Générales</h3>
+    <div class="stats-grid">
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Utilisateurs</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p>Total : <strong>{{ statistics?.total_users ?? 0 }}</strong></p>
+          <p *ngFor="let role of getPlainObjectKeys(statistics?.users_by_role)">
+            {{ role | titlecase }} : <strong>{{ statistics?.users_by_role[role] }}</strong>
+          </p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Patients & Médecins</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p>Total Patients : <strong>{{ statistics?.total_patients ?? 0 }}</strong></p>
+          <p>Total Médecins : <strong>{{ statistics?.total_medecins ?? 0 }}</strong></p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Patients par Tranche d'âge</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <ul>
+            <li *ngFor="let item of statistics?.patients_by_age_group">
+              {{ item.age_group }} : <strong>{{ item.total }}</strong>
+            </li>
+          </ul>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Rendez-vous</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p>Total : <strong>{{ statistics?.total_rendez_vous ?? 0 }}</strong></p>
+          <p *ngFor="let item of statistics?.rendez_vous_by_status">
+            {{ formatStatus(item.statut, 'rendezvous') }} : <strong>{{ item.total }}</strong>
+          </p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Paiements</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p>Chiffre d'affaires total : <strong>{{ statistics?.total_revenue ?? 0 | currency:'F CFA':'symbol':'1.2-2':'fr' }}</strong></p>
+          <p>Total Paiements : <strong>{{ statistics?.total_paiements ?? 0 }}</strong></p>
+          <p *ngFor="let item of statistics?.paiements_by_status">
+            {{ formatStatus(item.statut, 'paiements') }} : <strong>{{ item.total }}</strong> ({{ item.total_amount | currency:'F CFA':'symbol':'1.2-2':'fr' }})
+          </p>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </ng-container>
+
+  <!-- Statistiques des Patients -->
+  <ng-container *ngIf="reportType === 'patients'">
+    <h3 class="section-title">Statistiques des Patients</h3>
+    <div class="stats-grid">
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Nouveaux Patients</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p>Total : <strong>{{ statistics?.new_patients ?? 0 }}</strong></p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Patients par Sexe</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <ul>
+            <li *ngFor="let item of statistics?.patients_by_gender">
+              {{ item.sexe | titlecase }} : <strong>{{ item.total }}</strong>
+            </li>
+          </ul>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Patients par Tranche d'âge</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <ul>
+            <li *ngFor="let item of statistics?.patients_by_age_group">
+              {{ item.age_group }} : <strong>{{ item.total }}</strong>
+            </li>
+          </ul>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Top Patients par Rendez-vous</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <table class="stats-table">
+            <thead>
+              <tr><th>Patient</th><th>Rendez-vous</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of statistics?.top_patients_by_appointments">
+                <td>{{ item.patient_name }}</td>
+                <td>{{ item.total_appointments }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </ng-container>
+
+  <!-- Statistiques des Médecins -->
+  <ng-container *ngIf="reportType === 'medecins'">
+    <h3 class="section-title">Statistiques des Médecins</h3>
+    <div class="stats-grid">
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Médecins par Spécialité</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <ul>
+            <li *ngFor="let item of statistics?.medecins_by_speciality">
+              {{ item.specialite }} : <strong>{{ item.total }}</strong>
+            </li>
+          </ul>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Rendez-vous par Médecin</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <table class="stats-table">
+            <thead>
+              <tr><th>Médecin</th><th>Spécialité</th><th>Rendez-vous</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of statistics?.appointments_per_medecin">
+                <td>{{ item.medecin_name }}</td>
+                <td>{{ item.specialite }}</td>
+                <td>{{ item.total_appointments }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Revenus par Médecin</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <table class="stats-table">
+            <thead>
+              <tr><th>Médecin</th><th>Revenu Total</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of statistics?.revenue_per_medecin">
+                <td>{{ item.medecin_name }}</td>
+                <td>{{ item.total_revenue | currency:'F CFA':'symbol':'1.2-2':'fr' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </ng-container>
+
+  <!-- Statistiques des Rendez-vous -->
+  <ng-container *ngIf="reportType === 'rendezvous'">
+    <h3 class="section-title">Statistiques des Rendez-vous</h3>
+    <div class="stats-grid">
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Total Rendez-vous</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p>Total : <strong>{{ statistics?.total_rendez_vous ?? 0 }}</strong></p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Rendez-vous par Statut</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <ul>
+            <li *ngFor="let item of statistics?.rendez_vous_by_status">
+              {{ formatStatus(item.statut, 'rendezvous') }} : <strong>{{ item.total }}</strong>
+            </li>
+          </ul>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Rendez-vous par Motif</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <ul>
+            <li *ngFor="let item of statistics?.rendez_vous_by_motif">
+              {{ item.motif }} : <strong>{{ item.total }}</strong>
+            </li>
+          </ul>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Raisons d'Annulation/Report</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <table class="stats-table">
+            <thead>
+              <tr><th>Raison de Report</th><th>Raison Générale</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of statistics?.cancelled_reasons">
+                <td>{{ item.reschedule_reason || 'N/A' }}</td>
+                <td>{{ item.reason || 'N/A' }}</td>
+                <td>{{ item.total }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Rendez-vous Quotidiens</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <table class="stats-table">
+            <thead>
+              <tr><th>Date</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of statistics?.rendez_vous_daily">
+                <td>{{ item.date | date:'dd/MM/yyyy' }}</td>
+                <td>{{ item.total }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </ng-container>
+
+  <!-- Statistiques des Paiements -->
+  <ng-container *ngIf="reportType === 'paiements'">
+    <h3 class="section-title">Statistiques des Paiements</h3>
+    <div class="stats-grid">
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Vue d'ensemble</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p>Total Paiements : <strong>{{ statistics?.total_paiements ?? 0 }}</strong></p>
+          <p>Total Revenu : <strong>{{ statistics?.total_revenue ?? 0 | currency:'F CFA':'symbol':'1.2-2':'fr' }}</strong></p>
+          <p>Paiement Moyen : <strong>{{ statistics?.average_payment ?? 0 | currency:'F CFA':'symbol':'1.2-2':'fr' }}</strong></p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Paiements par Statut</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <table class="stats-table">
+            <thead>
+              <tr><th>Statut</th><th>Nombre</th><th>Montant Total</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of statistics?.paiements_by_status">
+                <td>{{ formatStatus(item.statut, 'paiements') }}</td>
+                <td>{{ item.total }}</td>
+                <td>{{ item.total_amount | currency:'F CFA':'symbol':'1.2-2':'fr' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stats-card">
+        <mat-card-header>
+          <mat-card-title>Revenu Mensuel</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <table class="stats-table">
+            <thead>
+              <tr><th>Mois</th><th>Revenu</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of statistics?.paiements_monthly_revenue">
+                <td>{{ item.month }}</td>
+                <td>{{ item.total_monthly_revenue | currency:'F CFA':'symbol':'1.2-2':'fr' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </ng-container>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-raised-button color="primary" (click)="onClose()">Fermer</button>
+</mat-dialog-actions>

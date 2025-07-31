@@ -26,7 +26,9 @@ class RendezVousController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $query = RendezVous::with('patient.user', 'medecin.user');
+
+        // MODIFICATION: Ajout de la relation 'paiement' pour charger les informations de paiement
+        $query = RendezVous::with(['patient.user', 'medecin.user', 'paiement']);
 
         if ($user->role === 'patient') {
             $patient = $user->patient;
@@ -36,11 +38,22 @@ class RendezVousController extends Controller
                 return response()->json(['data' => [], 'message' => 'No patient profile found.'], 200);
             }
         }
-        // You can add similar logic for the 'medecin' role
-        // elseif ($user->role === 'medecin') { ... }
+        // Si c'est un médecin, filtrer par ses rendez-vous
+        elseif ($user->role === 'medecin') {
+            $medecin = $user->medecin;
+            if ($medecin) {
+                $query->where('medecin_id', $medecin->id);
+            } else {
+                return response()->json(['data' => [], 'message' => 'No doctor profile found.'], 200);
+            }
+        }
+
+        // Trier par date/heure
+        $query->orderBy('date_heure', 'asc');
 
         return response()->json($query->paginate(10));
     }
+
 
     /**
      * Store a new appointment in the database.

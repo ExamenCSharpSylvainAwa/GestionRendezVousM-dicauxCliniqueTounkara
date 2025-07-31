@@ -1,6 +1,7 @@
 // doctor-appointments.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { ApiService, Appointment, PaginatedResponse, User } from '../services/api.service';
 import { Observable, throwError } from 'rxjs';
@@ -10,27 +11,53 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
-import { RescheduleAppointmentDialogComponent, RescheduleDialogResult, RescheduleDialogData } from '../components/reschedule-appointment-dialog/reschedule-appointment-dialog.component'; // Importez RescheduleDialogData
+import { RescheduleAppointmentDialogComponent, RescheduleDialogResult, RescheduleDialogData } from '../components/reschedule-appointment-dialog/reschedule-appointment-dialog.component';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatOptionModule } from '@angular/material/core';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatCardModule } from '@angular/material/card';
 
 @Component({
   selector: 'app-doctor-appointments',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatTableModule,
     MatButtonModule,
     MatIconModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatOptionModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatProgressSpinnerModule,
+    MatTooltipModule,
+    MatCardModule
   ],
   templateUrl: './doctor-appointments.component.html',
   styleUrls: ['./doctor-appointments.component.scss']
 })
 export class DoctorAppointmentsComponent implements OnInit {
   appointments: Appointment[] = [];
+  filteredAppointments: Appointment[] = [];
   displayedColumns: string[] = ['date', 'time', 'patient', 'status', 'actions'];
   isLoading = false;
   errorMessage: string | null = null;
-  currentUserRole: string | null = null; // Nouvelle propriété pour stocker le rôle de l'utilisateur
+  currentUserRole: string | null = null;
+
+  // Propriétés de filtrage
+  searchPatient: string = '';
+  selectedStatus: string = '';
+  startDate: Date | null = null;
+  endDate: Date | null = null;
 
   constructor(
     private apiService: ApiService,
@@ -40,11 +67,21 @@ export class DoctorAppointmentsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAppointments();
-    // Charge le profil de l'utilisateur pour obtenir son rôle
+    this.loadUserProfile();
+  }
+
+  private loadUserProfile(): void {
     this.apiService.getProfile().subscribe({
-      next: (user: User) => {
-        this.currentUserRole = user.role;
-        console.log('Rôle de l\'utilisateur actuel:', this.currentUserRole);
+      next: (response: any) => {
+        console.log('Réponse complète getProfile:', response);
+        
+        if (response && response.user && response.user.role) {
+          this.currentUserRole = response.user.role;
+          console.log('Rôle de l\'utilisateur actuel:', this.currentUserRole);
+        } else {
+          console.error('Structure de réponse inattendue pour getProfile:', response);
+          this.snackBar.open('Erreur: impossible de déterminer le rôle utilisateur.', 'Fermer', { panelClass: ['snackbar-error'] });
+        }
       },
       error: (err) => {
         console.error('Erreur lors du chargement du profil utilisateur:', err);
@@ -55,10 +92,10 @@ export class DoctorAppointmentsComponent implements OnInit {
 
   loadAppointments(): void {
     this.isLoading = true;
+    this.errorMessage = null;
+    
     this.apiService.getAppointments().pipe(
       map((response: PaginatedResponse<Appointment>) => {
-        // Supposons que getAppointments() renvoie déjà les rendez-vous du médecin connecté
-        // ou que le filtrage est fait au niveau du backend.
         return response.data;
       }),
       catchError((error: HttpErrorResponse) => {
@@ -69,7 +106,9 @@ export class DoctorAppointmentsComponent implements OnInit {
     ).subscribe({
       next: (data: Appointment[]) => {
         this.appointments = this.sortAppointmentsByDate(data);
+        this.filteredAppointments = [...this.appointments];
         this.isLoading = false;
+        this.applyFilters();
       },
       error: (err) => {
         console.error('Erreur lors du chargement des rendez-vous:', err);
@@ -88,8 +127,81 @@ export class DoctorAppointmentsComponent implements OnInit {
     });
   }
 
+  // Méthodes de filtrage
+  applyFilters(): void {
+    let filtered = [...this.appointments];
+
+    // Filtre par nom de patient
+    if (this.searchPatient.trim()) {
+      filtered = filtered.filter(appointment => {
+        const patientName = this.getPatientName(appointment).toLowerCase();
+        return patientName.includes(this.searchPatient.toLowerCase());
+      });
+    }
+
+    // Filtre par statut
+    if (this.selectedStatus) {
+      filtered = filtered.filter(appointment => appointment.statut === this.selectedStatus);
+    }
+
+    // Filtre par date de début
+    if (this.startDate) {
+      filtered = filtered.filter(appointment => {
+        const appointmentDate = new Date(appointment.date_heure);
+        appointmentDate.setHours(0, 0, 0, 0);
+        const startDateCopy = new Date(this.startDate!);
+        startDateCopy.setHours(0, 0, 0, 0);
+        return appointmentDate >= startDateCopy;
+      });
+    }
+
+    // Filtre par date de fin
+    if (this.endDate) {
+      filtered = filtered.filter(appointment => {
+        const appointmentDate = new Date(appointment.date_heure);
+        appointmentDate.setHours(23, 59, 59, 999);
+        const endDateCopy = new Date(this.endDate!);
+        endDateCopy.setHours(23, 59, 59, 999);
+        return appointmentDate <= endDateCopy;
+      });
+    }
+
+    this.filteredAppointments = filtered;
+  }
+
+  clearAllFilters(): void {
+    this.searchPatient = '';
+    this.selectedStatus = '';
+    this.startDate = null;
+    this.endDate = null;
+    this.applyFilters();
+  }
+
+  // Méthodes pour les statistiques
+  getTotalAppointments(): number {
+    return this.appointments.length;
+  }
+
+  getPendingAppointments(): number {
+    return this.appointments.filter(app => app.statut === 'en_attente').length;
+  }
+
+  getConfirmedAppointments(): number {
+    return this.appointments.filter(app => app.statut === 'confirme').length;
+  }
+
+  // Méthodes utilitaires
   getPatientName(appointment: Appointment): string {
     return appointment.patient?.user ? `${appointment.patient.user.prenom} ${appointment.patient.user.nom}` : 'N/A';
+  }
+
+  getPatientInitials(appointment: Appointment): string {
+    if (appointment.patient?.user) {
+      const prenom = appointment.patient.user.prenom || '';
+      const nom = appointment.patient.user.nom || '';
+      return (prenom.charAt(0) + nom.charAt(0)).toUpperCase();
+    }
+    return 'NA';
   }
 
   formatDateTime(dateTime: string): string {
@@ -120,6 +232,142 @@ export class DoctorAppointmentsComponent implements OnInit {
     }
   }
 
+  getStatusIcon(statut: 'en_attente' | 'confirme' | 'annule' | 'termine'): string {
+    switch (statut) {
+      case 'en_attente':
+        return 'schedule';
+      case 'confirme':
+        return 'check_circle';
+      case 'annule':
+        return 'cancel';
+      case 'termine':
+        return 'task_alt';
+      default:
+        return 'help';
+    }
+  }
+
+  /**
+   * Vérifie si le rendez-vous a été payé (statut du paiement = 'paye')
+   */
+  isAppointmentPaid(appointment: Appointment): boolean {
+    return appointment.paiement?.statut === 'paye';
+  }
+
+  /**
+   * Vérifie si on peut marquer le rendez-vous comme terminé
+   * - Le rendez-vous doit être confirmé ou payé
+   * - Le paiement doit avoir le statut 'paye'
+   * - Le rendez-vous ne doit pas déjà être terminé
+   */
+  canMarkAsCompleted(appointment: Appointment): boolean {
+    return (appointment.statut === 'confirme' || appointment.statut === 'termine') && 
+           this.isAppointmentPaid(appointment) && 
+           appointment.statut !== 'termine';
+  }
+
+  /**
+   * Formate uniquement l'heure d'un datetime (corrigé pour UTC)
+   */
+  formatTimeOnly(dateTime: string): string {
+    if (!dateTime) return 'N/A';
+    
+    try {
+      const dateObj = new Date(dateTime);
+      
+      // Vérifier si la date est valide
+      if (isNaN(dateObj.getTime())) {
+        console.error('Date invalide:', dateTime);
+        return 'Date invalide';
+      }
+      
+      // Formater l'heure en tenant compte du timezone local
+      const hours = dateObj.getHours().toString().padStart(2, '0');
+      const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+      
+      return `${hours}:${minutes}`;
+    } catch (error) {
+      console.error('Erreur lors du formatage de l\'heure:', error, dateTime);
+      return 'Erreur';
+    }
+  }
+
+  /**
+   * Formate uniquement la date d'un datetime (corrigé pour UTC)
+   */
+  formatDateOnly(dateTime: string): string {
+    if (!dateTime) return 'N/A';
+    
+    try {
+      const dateObj = new Date(dateTime);
+      
+      // Vérifier si la date est valide
+      if (isNaN(dateObj.getTime())) {
+        console.error('Date invalide:', dateTime);
+        return 'Date invalide';
+      }
+      
+      // Formater la date en tenant compte du timezone local
+      const day = dateObj.getDate().toString().padStart(2, '0');
+      const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+      const year = dateObj.getFullYear();
+      
+      return `${day}/${month}/${year}`;
+    } catch (error) {
+      console.error('Erreur lors du formatage de la date:', error, dateTime);
+      return 'Erreur';
+    }
+  }
+
+  /**
+   * Alternative avec Intl.DateTimeFormat pour plus de fiabilité
+   */
+  formatTimeOnlyIntl(dateTime: string): string {
+    if (!dateTime) return 'N/A';
+    
+    try {
+      const dateObj = new Date(dateTime);
+      
+      if (isNaN(dateObj.getTime())) {
+        return 'Date invalide';
+      }
+      
+      return new Intl.DateTimeFormat('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Africa/Dakar' // Votre timezone à Dakar
+      }).format(dateObj);
+    } catch (error) {
+      console.error('Erreur Intl:', error);
+      return 'Erreur';
+    }
+  }
+
+  /**
+   * Alternative avec Intl.DateTimeFormat pour la date
+   */
+  formatDateOnlyIntl(dateTime: string): string {
+    if (!dateTime) return 'N/A';
+    
+    try {
+      const dateObj = new Date(dateTime);
+      
+      if (isNaN(dateObj.getTime())) {
+        return 'Date invalide';
+      }
+      
+      return new Intl.DateTimeFormat('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: 'Africa/Dakar' // Votre timezone à Dakar
+      }).format(dateObj);
+    } catch (error) {
+      console.error('Erreur Intl:', error);
+      return 'Erreur';
+    }
+  }
+
   /**
    * Confirme un rendez-vous.
    * @param appointment L'objet rendez-vous à confirmer.
@@ -128,21 +376,69 @@ export class DoctorAppointmentsComponent implements OnInit {
     // Vérifie si l'utilisateur actuel est un médecin
     if (this.currentUserRole !== 'medecin') {
       this.snackBar.open('Seuls les médecins peuvent confirmer les rendez-vous.', 'Fermer', { panelClass: ['snackbar-error'] });
-      return; // Empêche l'appel API si l'utilisateur n'est pas un médecin
+      return;
     }
 
     if (!appointment.id) {
       this.snackBar.open('ID du rendez-vous manquant pour la confirmation.', 'Fermer', { panelClass: ['snackbar-error'] });
       return;
     }
+
     this.isLoading = true;
     this.apiService.confirmAppointment(appointment.id).subscribe({
       next: (response) => {
-        this.snackBar.open('Rendez-vous confirmé avec succès ! ✅', 'Fermer', { panelClass: ['snackbar-success'] });
-        this.loadAppointments(); // Recharger la liste
+        this.snackBar.open('Rendez-vous confirmé avec succès ! ✅', 'Fermer', { 
+          panelClass: ['snackbar-success'],
+          duration: 3000
+        });
+        this.loadAppointments();
       },
       error: (error) => {
-        this.snackBar.open(`Erreur lors de la confirmation: ${error.message || 'Erreur inconnue'}`, 'Fermer', { panelClass: ['snackbar-error'] });
+        this.snackBar.open(`Erreur lors de la confirmation: ${error.message || 'Erreur inconnue'}`, 'Fermer', { 
+          panelClass: ['snackbar-error'],
+          duration: 5000
+        });
+        this.isLoading = false;
+      }
+    });
+  }
+
+  /**
+   * Marque un rendez-vous comme terminé (consultation effectuée).
+   * @param appointment L'objet rendez-vous à marquer comme terminé.
+   */
+  markAppointmentAsCompleted(appointment: Appointment): void {
+    // Vérifie si l'utilisateur actuel est un médecin
+    if (this.currentUserRole !== 'medecin') {
+      this.snackBar.open('Seuls les médecins peuvent marquer les rendez-vous comme terminés.', 'Fermer', { panelClass: ['snackbar-error'] });
+      return;
+    }
+
+    if (!appointment.id) {
+      this.snackBar.open('ID du rendez-vous manquant.', 'Fermer', { panelClass: ['snackbar-error'] });
+      return;
+    }
+
+    // Vérifier que le rendez-vous peut être marqué comme terminé
+    if (!this.canMarkAsCompleted(appointment)) {
+      this.snackBar.open('Ce rendez-vous ne peut pas être marqué comme terminé. Vérifiez que le paiement a été effectué.', 'Fermer', { panelClass: ['snackbar-error'] });
+      return;
+    }
+
+    this.isLoading = true;
+    this.apiService.updateAppointmentStatut(appointment.id, 'termine').subscribe({
+      next: (response) => {
+        this.snackBar.open('Rendez-vous marqué comme terminé avec succès ! 🏁', 'Fermer', { 
+          panelClass: ['snackbar-success'],
+          duration: 3000
+        });
+        this.loadAppointments();
+      },
+      error: (error) => {
+        this.snackBar.open(`Erreur lors de la mise à jour: ${error.message || 'Erreur inconnue'}`, 'Fermer', { 
+          panelClass: ['snackbar-error'],
+          duration: 5000
+        });
         this.isLoading = false;
       }
     });
@@ -163,8 +459,8 @@ export class DoctorAppointmentsComponent implements OnInit {
       patientName: this.getPatientName(appointment),
       doctorName: `Dr. ${appointment.medecin.user.prenom} ${appointment.medecin.user.nom}`,
       currentDate: this.formatDateTime(appointment.date_heure),
-      doctorMedecinId: appointment.medecin.id, // Passer l'ID du profil médecin
-      doctorUserId: appointment.medecin.user.id // Passer l'ID de l'utilisateur médecin
+      doctorMedecinId: appointment.medecin.id,
+      doctorUserId: appointment.medecin.user.id
     };
 
     const dialogRef = this.dialog.open(RescheduleAppointmentDialogComponent, {
@@ -175,24 +471,27 @@ export class DoctorAppointmentsComponent implements OnInit {
     dialogRef.afterClosed().subscribe((result: RescheduleDialogResult | undefined) => {
       if (result && result.confirmed) {
         this.isLoading = true;
-        // La méthode rescheduleAppointment dans api.service.ts attend maintenant un objet data complet
-        // avec new_date_heure, reschedule_reason, patient_id, medecin_id, motif et tarif.
-        // Nous devons donc récupérer ces informations du rendez-vous original et les inclure.
         const rescheduleData = {
             new_date_heure: result.newDateHeure,
             reschedule_reason: result.reason,
             patient_id: appointment.patient_id,
             medecin_id: appointment.medecin_id,
             motif: appointment.motif,
-            tarif: appointment.tarif !== undefined ? appointment.tarif : 0 // Assurez-vous d'avoir une valeur par défaut si tarif est optionnel
+            tarif: appointment.tarif !== undefined ? appointment.tarif : 0
         };
         this.apiService.rescheduleAppointment(appointment.id!, rescheduleData).subscribe({
           next: (response) => {
-            this.snackBar.open('Rendez-vous reporté avec succès ! 🗓️', 'Fermer', { panelClass: ['snackbar-success'] });
-            this.loadAppointments(); // Recharger la liste
+            this.snackBar.open('Rendez-vous reporté avec succès ! 🗓️', 'Fermer', { 
+              panelClass: ['snackbar-success'],
+              duration: 3000
+            });
+            this.loadAppointments();
           },
           error: (error) => {
-            this.snackBar.open(`Erreur lors du report: ${error.message || 'Erreur inconnue'}`, 'Fermer', { panelClass: ['snackbar-error'] });
+            this.snackBar.open(`Erreur lors du report: ${error.message || 'Erreur inconnue'}`, 'Fermer', { 
+              panelClass: ['snackbar-error'],
+              duration: 5000
+            });
             this.isLoading = false;
           }
         });

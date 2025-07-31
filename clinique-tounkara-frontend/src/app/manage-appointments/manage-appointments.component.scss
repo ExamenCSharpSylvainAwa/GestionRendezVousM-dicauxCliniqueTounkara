@@ -1,92 +1,132 @@
-/* src/app/components/manage-appointments/manage-appointments.component.scss */
-
 // Variables pour les couleurs et les ombres
-$primary-color: #007BFF; // Bleu pour les actions principales
-$accent-color: #28A745; // Vert pour les confirmations
-$warn-color: #DC3545; // Rouge pour les actions dangereuses
-$text-color: #333;
-$light-text-color: #666;
-$border-color: #e0e0e0;
-$background-light: #f9f9f9;
-$background-card: #ffffff;
-
+$primary-color: #4A90E2; // Bleu moderne
+$accent-color: #2ECC71; // Vert vif
+$warn-color: #E74C3C; // Rouge élégant
+$text-color: #2D3748; // Gris foncé pour le texte
+$light-text-color: #718096; // Gris clair pour le texte secondaire
+$border-color: #E2E8F0; // Bordure subtile
+$background-light: #F7FAFC; // Fond clair
+$background-card: #FFFFFF; // Fond des cartes
 $shadow-light: 0 2px 4px rgba(0, 0, 0, 0.05);
-$shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.1);
+$shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.1);
 
 // Mixin pour les arrondis
-@mixin border-radius($radius: 8px) {
+@mixin border-radius($radius: 12px) {
   border-radius: $radius;
+}
+
+// Animation pour les transitions fluides
+@mixin transition($properties...) {
+  transition: $properties 0.3s ease-in-out;
 }
 
 // Styles généraux du conteneur
 .appointments-container {
-  padding: 24px;
-  max-width: 1400px;
-  margin: 24px auto;
+  padding: 32px;
+  max-width: 1440px;
+  margin: 32px auto;
   background-color: $background-card;
-  @include border-radius(12px);
+  @include border-radius(16px);
   box-shadow: $shadow-medium;
-  font-family: 'Inter', sans-serif; // Utilisation de la police Inter
+  font-family: 'Inter', sans-serif;
   color: $text-color;
 
   @media (max-width: 768px) {
-    padding: 16px;
-    margin: 16px;
-    @include border-radius(8px);
+    padding: 20px;
+    margin: 20px;
+    @include border-radius(12px);
   }
 }
 
 // Titre de la page
 .appointments-title {
-  font-size: 2.2em;
+  font-size: 2.5em;
   color: $primary-color;
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 40px;
   font-weight: 700;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.8px;
 
   @media (max-width: 768px) {
-    font-size: 1.8em;
-    margin-bottom: 20px;
+    font-size: 2em;
+    margin-bottom: 24px;
+  }
+}
+
+// Conteneur des filtres
+.filter-container {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: $background-light;
+  @include border-radius(12px);
+  box-shadow: $shadow-light;
+
+  .filter-field {
+    flex: 1;
+    min-width: 200px;
+    max-width: 300px;
+
+    mat-form-field {
+      width: 100%;
+      font-size: 0.9em;
+
+      .mat-form-field-wrapper {
+        padding-bottom: 0;
+      }
+    }
+  }
+
+  .clear-filter-btn {
+    height: 40px;
+    align-self: flex-end;
+    background-color: $accent-color;
+    color: #fff;
+    @include border-radius(8px);
+    @include transition(transform, box-shadow);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: $shadow-medium;
+    }
   }
 }
 
 // Bouton d'ajout de rendez-vous
 .add-appointment-btn {
   position: fixed;
-  bottom: 30px;
-  right: 30px;
+  bottom: 40px;
+  right: 40px;
   z-index: 1000;
-  background-color: $primary-color;
+  background: linear-gradient(45deg, $primary-color, lighten($primary-color, 10%));
   color: #fff;
   box-shadow: $shadow-medium;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  @include transition(transform, box-shadow);
 
   &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    transform: scale(1.1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
   }
 
   mat-icon {
-    font-size: 28px;
+    font-size: 30px;
   }
 
   @media (max-width: 768px) {
-    bottom: 20px;
-    right: 20px;
-    width: 50px;
-    height: 50px;
-    min-width: 50px;
-    line-height: 50px;
-    font-size: 24px;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
   }
 }
 
-// Conteneur du tableau (pour le défilement horizontal sur petits écrans)
+// Conteneur du tableau
 .table-container {
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch; /* Améliore le défilement sur iOS */
-  @include border-radius(8px);
+  -webkit-overflow-scrolling: touch;
+  @include border-radius(12px);
   box-shadow: $shadow-light;
   background-color: $background-card;
 }
@@ -95,86 +135,81 @@ $shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.1);
 .appointments-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 900px; // Assure que le tableau ne devient pas trop étroit
+  min-width: 900px;
 
-  // En-têtes de colonne
   th.mat-header-cell {
-    background-color: $primary-color;
+    background: linear-gradient(45deg, $primary-color, lighten($primary-color, 10%));
     color: #fff;
     font-weight: 600;
-    padding: 16px 20px;
+    padding: 16px 24px;
     text-align: left;
-    font-size: 0.95em;
-    border-bottom: 2px solid darken($primary-color, 10%);
+    font-size: 1em;
+    border-bottom: 2px solid darken($primary-color, 15%);
 
     &:first-child {
-      @include border-radius(8px 0 0 0);
+      @include border-radius(12px 0 0 0);
     }
     &:last-child {
-      @include border-radius(0 8px 0 0);
+      @include border-radius(0 12px 0 0);
     }
   }
 
-  // Cellules de données
   td.mat-cell {
-    padding: 14px 20px;
+    padding: 16px 24px;
     border-bottom: 1px solid $border-color;
-    font-size: 0.9em;
-    color: $light-text-color;
+    font-size: 0.95em;
+    color: $text-color;
     vertical-align: middle;
 
     &:last-child {
-      padding-right: 15px;
+      padding-right: 16px;
     }
   }
 
-  // Lignes du tableau
   tr.mat-row {
-    transition: background-color 0.2s ease;
+    @include transition(background-color);
 
     &:nth-child(even) {
       background-color: $background-light;
     }
 
     &:hover {
-      background-color: #f0f0f0;
+      background-color: #EDF2F7;
     }
   }
 
-  // Styles pour les statuts de rendez-vous
   .appointment-status {
     display: inline-block;
-    padding: 4px 8px;
-    @include border-radius(4px);
-    font-size: 0.8em;
+    padding: 6px 12px;
+    @include border-radius(6px);
+    font-size: 0.85em;
     font-weight: 600;
     color: #fff;
     text-transform: uppercase;
 
     &.status-en_attente {
-      background-color: #FFC107; // Jaune/Orange
+      background-color: #F39C12;
     }
     &.status-confirme {
-      background-color: $accent-color; // Vert
+      background-color: $accent-color;
     }
     &.status-annule {
-      background-color: $warn-color; // Rouge
+      background-color: $warn-color;
     }
     &.status-termine {
-      background-color: #6C757D; // Gris
+      background-color: #7F8C8D;
     }
   }
 
-  // Styles pour les boutons d'action
   .mat-column-actions {
     text-align: center;
     button {
-      margin: 0 4px;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      margin: 0 6px;
+      @include transition(transform, box-shadow);
 
       &:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+        box-shadow: $shadow-light;
       }
 
       &.mat-primary {
@@ -197,7 +232,7 @@ $shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.1);
     display: block;
 
     th.mat-header-cell, td.mat-cell {
-      padding: 10px 12px;
+      padding: 12px 16px;
     }
 
     thead {
@@ -207,10 +242,10 @@ $shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.1);
     tr.mat-row {
       flex-direction: column;
       align-items: flex-start;
-      padding: 10px 0;
+      padding: 12px;
       border-bottom: 1px solid $border-color;
-      margin-bottom: 10px;
-      @include border-radius(8px);
+      margin-bottom: 12px;
+      @include border-radius(10px);
       box-shadow: $shadow-light;
       background-color: $background-card;
 
@@ -223,13 +258,13 @@ $shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.1);
       display: flex;
       justify-content: space-between;
       width: 100%;
-      padding: 8px 15px;
+      padding: 10px 16px;
       border-bottom: none;
 
       &:before {
         content: attr(data-label);
         font-weight: 600;
-        margin-right: 10px;
+        margin-right: 12px;
         color: $text-color;
       }
     }
@@ -239,11 +274,11 @@ $shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.1);
 // Styles pour les messages d'erreur/succès du snackbar
 .mat-snack-bar-container {
   &.success-snackbar {
-    background-color: $accent-color; // Vert pour succès
+    background-color: $accent-color;
     color: #fff;
   }
   &.error-snackbar {
-    background-color: $warn-color; // Rouge pour erreur
+    background-color: $warn-color;
     color: #fff;
   }
 }

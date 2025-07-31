@@ -20,142 +20,7 @@ import { filter } from 'rxjs/operators';
     MatButtonModule,
     RouterModule
   ],
-  template: `
-    <mat-sidenav-container class="sidenav-container">
-      <mat-sidenav #sidenav 
-                   mode="side" 
-                   [opened]="getSidenavOpenState()"
-                   [fixedInViewport]="false"
-                   [fixedTopGap]="0"
-                   [fixedBottomGap]="0">
-        <!-- En-tête avec nom et prénom de l'utilisateur -->
-        <div class="sidebar-header">
-          <h2>Clinique TOUNKARA</h2>
-          <div class="user-info">
-            <mat-icon>account_circle</mat-icon>
-            <span>{{ getUserFullName() }}</span>
-          </div>
-        </div>
-
-        <mat-nav-list>
-          <!-- Options communes à tous les rôles -->
-          <a mat-list-item routerLink="/dashboard" routerLinkActive="active">
-            <mat-icon>dashboard</mat-icon>
-            Tableau de bord
-          </a>
-
-          <!-- Lien pour modifier le profil -->
-          <a mat-list-item routerLink="/profile-edit" routerLinkActive="active">
-            <mat-icon>edit</mat-icon>
-            Modifier mon profil
-          </a>
-
-          <!-- Rôle : Patient -->
-          @if (getUserRole() === 'patient') {
-            <a mat-list-item routerLink="/appointments" routerLinkActive="active">
-              <mat-icon>event</mat-icon>
-              Prendre rendez-vous
-            </a>
-            <a mat-list-item routerLink="/medical-records" routerLinkActive="active">
-              <mat-icon>folder</mat-icon>
-              Consulter dossier médical
-            </a>
-            <a mat-list-item routerLink="/prescriptions" routerLinkActive="active">
-              <mat-icon>description</mat-icon>
-              Consulter prescriptions
-            </a>
-            <a mat-list-item routerLink="/payments" routerLinkActive="active">
-              <mat-icon>payment</mat-icon>
-              Consulter paiements
-            </a>
-          }
-
-          <!-- Rôle : Médecin -->
-          @if (getUserRole() === 'medecin') {
-            <a mat-list-item routerLink="/view-schedule" routerLinkActive="active">
-              <mat-icon>calendar_today</mat-icon>
-              Consulter planning
-            </a>
-            <a mat-list-item routerLink="/doctor-appointments" routerLinkActive="active">
-              <mat-icon>event_note</mat-icon>
-              Liste des rendez-vous
-            </a>
-            <a mat-list-item routerLink="/medical-records" routerLinkActive="active">
-              <mat-icon>folder</mat-icon>
-              Gérer dossiers médicaux
-            </a>
-            <a mat-list-item routerLink="/prescriptions" routerLinkActive="active">
-              <mat-icon>description</mat-icon>
-              Émettre prescriptions
-            </a>
-              <a mat-list-item routerLink="/consultations" routerLinkActive="active">
-                <mat-icon>consultations</mat-icon>
-                Émettre consultations
-              </a>
-            <a mat-list-item routerLink="/schedule/edit" routerLinkActive="active">
-              <mat-icon>edit_calendar</mat-icon>
-              Modifier horaires
-            </a>
-          }
-
-          <!-- Rôle : Personnel -->
-          @if (getUserRole() === 'personnel') {
-            <a mat-list-item routerLink="/patients" routerLinkActive="active">
-              <mat-icon>people</mat-icon>
-              Créer comptes patients
-            </a>
-            <a mat-list-item routerLink="/doctors" routerLinkActive="active">
-              <mat-icon>person</mat-icon>
-              Créer comptes médecins
-            </a>
-            <a mat-list-item routerLink="/appointments/manage" routerLinkActive="active">
-              <mat-icon>event</mat-icon>
-              Gérer rendez-vous
-            </a>
-            <a mat-list-item routerLink="/billing" routerLinkActive="active">
-              <mat-icon>receipt</mat-icon>
-              Enregistrer factures/paiements
-            </a>
-            <a mat-list-item routerLink="/billing/manage" routerLinkActive="active">
-              <mat-icon>calculate</mat-icon>
-              Gérer facturation
-            </a>
-          }
-
-          <!-- Rôle : Administrateur -->
-          @if (getUserRole() === 'administrateur') {
-            <a mat-list-item routerLink="/users" routerLinkActive="active">
-              <mat-icon>people</mat-icon>
-              Gérer utilisateurs
-            </a>
-            <a mat-list-item routerLink="/permissions" routerLinkActive="active">
-              <mat-icon>lock</mat-icon>
-              Définir rôles/permissions
-            </a>
-            <a mat-list-item routerLink="/reports" routerLinkActive="active">
-              <mat-icon>assessment</mat-icon>
-              Générer rapports
-            </a>
-          }
-
-          <!-- Déconnexion pour tous les rôles -->
-          <a mat-list-item (click)="logout()">
-            <mat-icon>exit_to_app</mat-icon>
-            Déconnexion
-          </a>
-        </mat-nav-list>
-      </mat-sidenav>
-      
-      <mat-sidenav-content>
-        @if (isHandset) {
-          <button mat-icon-button (click)="toggleSidenav()" class="menu-button">
-            <mat-icon>menu</mat-icon>
-          </button>
-        }
-        <router-outlet></router-outlet>
-      </mat-sidenav-content>
-    </mat-sidenav-container>
-  `,
+  templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.scss']
 })
 export class SidebarComponent implements OnInit, OnDestroy {
@@ -224,5 +89,21 @@ export class SidebarComponent implements OnInit, OnDestroy {
   getUserFullName(): string {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     return `${user.prenom || 'Utilisateur'} ${user.nom || ''}`.trim();
+  }
+
+  // Méthode pour obtenir l'avatar de l'utilisateur (initiales)
+  getUserInitials(): string {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const prenom = user.prenom || 'U';
+    const nom = user.nom || '';
+    return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
+  }
+
+  // Méthode pour obtenir une couleur d'avatar basée sur le nom
+  getAvatarColor(): string {
+    const colors = ['#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffc107', '#ff9800', '#ff5722'];
+    const name = this.getUserFullName();
+    const index = name.charCodeAt(0) % colors.length;
+    return colors[index];
   }
 }

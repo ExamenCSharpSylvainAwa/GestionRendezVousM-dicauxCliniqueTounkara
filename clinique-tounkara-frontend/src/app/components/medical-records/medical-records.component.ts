@@ -6,7 +6,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MedicalRecordDialogComponent } from '../medical-record-dialog/medical-record-dialog.component';
 
 @Component({
@@ -19,14 +22,19 @@ import { MedicalRecordDialogComponent } from '../medical-record-dialog/medical-r
     MatDialogModule,
     MatSnackBarModule,
     MatIconModule,
-    DatePipe
+    MatFormFieldModule,  // ✅ Module complet au lieu des composants individuels
+    MatInputModule,      // ✅ Nécessaire pour les inputs dans mat-form-field
+    DatePipe,
+    FormsModule
   ],
   templateUrl: './medical-records.component.html',
   styleUrls: ['./medical-records.component.scss']
 })
 export class MedicalRecordsComponent implements OnInit {
   records: MedicalRecord[] = [];
+  filteredRecords: MedicalRecord[] = [];
   patients: Patient[] = [];
+  searchText: string = '';
 
   constructor(
     private apiService: ApiService,
@@ -42,10 +50,8 @@ export class MedicalRecordsComponent implements OnInit {
   loadMedicalRecords() {
     this.apiService.getMedicalRecords().subscribe({
       next: (response: PaginatedResponse<MedicalRecord>) => {
-        console.log('Medical records loaded:', response.data);
         this.records = response.data;
-        
-        // Vérifier si les relations patient sont bien chargées
+        this.filteredRecords = [...this.records];
         const recordsWithoutPatient = this.records.filter(r => !r.patient);
         if (recordsWithoutPatient.length > 0) {
           console.warn('Certains dossiers n\'ont pas la relation patient chargée:', recordsWithoutPatient);
@@ -58,10 +64,14 @@ export class MedicalRecordsComponent implements OnInit {
     });
   }
 
+  clearSearch() {
+    this.searchText = '';
+    this.filterRecords();
+  }
+
   loadPatients() {
     this.apiService.getPatients().subscribe({
       next: (response: PaginatedResponse<Patient>) => {
-        // Filtrer les patients avec le rôle "patient" uniquement
         this.patients = response.data.filter(patient => patient.user?.role === 'patient');
         console.log('Patients avec rôle "patient" chargés:', this.patients);
       },
@@ -72,19 +82,25 @@ export class MedicalRecordsComponent implements OnInit {
     });
   }
 
-  // Méthode utilitaire pour obtenir le nom du patient
   getPatientName(record: MedicalRecord): string {
     if (record.patient?.user) {
       return `${record.patient.user.nom} ${record.patient.user.prenom}`;
     }
-    
-    // Fallback: chercher le patient dans la liste des patients chargés
+
     const patient = this.patients.find(p => p.id === record.patient_id);
     if (patient?.user) {
       return `${patient.user.nom} ${patient.user.prenom}`;
     }
-    
+
     return `Patient inconnu (ID: ${record.patient_id})`;
+  }
+
+  filterRecords() {
+    const search = this.searchText.toLowerCase().trim();
+    this.filteredRecords = this.records.filter(record => {
+      const name = this.getPatientName(record).toLowerCase();
+      return name.includes(search);
+    });
   }
 
   openCreateDialog() {
@@ -94,15 +110,25 @@ export class MedicalRecordsComponent implements OnInit {
     });
 
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        // Ajouter date_creation avec la date actuelle au format ISO
+      if (result?.success) {
+        const patientId = result.patientId;
+        const existingRecord = this.records.find(r => r.patient_id === patientId);
+
+        if (existingRecord) {
+          this.snackBar.open('Ce patient a déjà un dossier médical.', 'Fermer', {
+            duration: 4000
+          });
+          return;
+        }
+
         const medicalRecordData = {
-          patient_id: result.patient_id,
-          date_creation: new Date().toISOString().split('T')[0] // Format YYYY-MM-DD
+          patient_id: patientId,
+          date_creation: new Date().toISOString().split('T')[0]
         };
+
         this.apiService.createMedicalRecord(medicalRecordData).subscribe({
-          next: (newRecord: MedicalRecord) => {
-            this.loadMedicalRecords(); // Recharger pour inclure les relations
+          next: () => {
+            this.loadMedicalRecords();
             this.snackBar.open('Dossier médical créé avec succès', 'Fermer', { duration: 3000 });
           },
           error: (error) => {
@@ -118,6 +144,7 @@ export class MedicalRecordsComponent implements OnInit {
     this.apiService.deleteMedicalRecord(recordId).subscribe({
       next: () => {
         this.records = this.records.filter(record => record.id !== recordId);
+        this.filterRecords();
         this.snackBar.open('Dossier médical supprimé avec succès', 'Fermer', { duration: 3000 });
       },
       error: (error) => {

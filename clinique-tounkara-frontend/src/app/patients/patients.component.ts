@@ -5,11 +5,17 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { CommonModule } from '@angular/common';
-import { ApiService, Patient, User, ApiError } from '../services/api.service';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { FormsModule } from '@angular/forms';
+import { ApiService, Patient, User, ApiError } from '../services/api.service';
 import { ConfirmationDialogComponent } from '../components/confirmation-dialog/confirmation-dialog.component';
 import { UserDialogComponent } from '../user-dialog/user-dialog.component';
 import { UserFormData } from '../services/api.service';
+
 @Component({
   selector: 'app-patients',
   standalone: true,
@@ -21,14 +27,22 @@ import { UserFormData } from '../services/api.service';
     MatDialogModule,
     MatSlideToggleModule,
     MatSnackBarModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatCheckboxModule,
+    FormsModule,
   ],
   templateUrl: './patients.component.html',
-  styleUrls: ['./patients.component.scss']
+  styleUrls: ['./patients.component.scss'],
 })
 export class PatientsComponent implements OnInit {
   displayedColumns: string[] = ['prenom', 'nom', 'email', 'numero_assurance', 'adresse', 'date_naissance', 'sexe', 'actif', 'actions'];
   dataSource = new MatTableDataSource<Patient>([]);
   patients: Patient[] = [];
+  filterValue: string = '';
+  sexFilter: string = '';
+  activeFilter: boolean = false;
 
   constructor(
     public dialog: MatDialog,
@@ -46,10 +60,9 @@ export class PatientsComponent implements OnInit {
     this.apiService.getPatients().subscribe({
       next: (response: { data: Patient[] }) => {
         console.log('PatientsComponent: Patients chargés avec succès:', response);
-        // Filtrer les patients pour s'assurer que seuls ceux avec le rôle 'patient' sont affichés
         this.patients = (response.data || []).filter(patient => patient.user?.role === 'patient');
         this.dataSource.data = this.patients;
-        console.log('PatientsComponent: dataSource.data:', this.dataSource.data);
+        this.applyFilter();
       },
       error: (error: ApiError) => {
         console.error('PatientsComponent: Erreur lors du chargement des patients:', error);
@@ -59,7 +72,6 @@ export class PatientsComponent implements OnInit {
         }
         this.snackBar.open(errorMessage, 'Fermer', { duration: 3000 });
 
-        // Données de secours pour le développement
         this.patients = ([
           {
             id: 1,
@@ -70,14 +82,14 @@ export class PatientsComponent implements OnInit {
               nom: 'Dupont',
               email: 'jean.dupont@example.com',
               role: 'patient',
-              actif: true
+              actif: true,
             },
             numero_assurance: '123456789',
             adresse: '123 Rue Principale, Ville',
             date_naissance: '1980-01-01',
             sexe: 'M',
             groupe_sanguin: 'O+',
-            antecedent_medicaux: 'Aucun'
+            antecedent_medicaux: 'Aucun',
           },
           {
             id: 2,
@@ -88,24 +100,48 @@ export class PatientsComponent implements OnInit {
               nom: 'Martin',
               email: 'marie.martin@example.com',
               role: 'patient',
-              actif: true
+              actif: true,
             },
             numero_assurance: '987654321',
             adresse: '456 Avenue Secondaire, Ville',
             date_naissance: '1990-02-02',
             sexe: 'F',
             groupe_sanguin: 'A+',
-            antecedent_medicaux: 'Allergie au pollen'
-          }
+            antecedent_medicaux: 'Allergie au pollen',
+          },
         ] as Patient[]).filter(patient => patient.user?.role === 'patient');
 
         this.dataSource.data = this.patients;
-      }
+        this.applyFilter();
+      },
     });
   }
 
+  applyFilter(): void {
+    let filteredData = this.patients;
+
+    if (this.filterValue) {
+      const filterText = this.filterValue.toLowerCase().trim();
+      filteredData = filteredData.filter(patient =>
+        patient.user?.prenom?.toLowerCase().includes(filterText) ||
+        patient.user?.nom?.toLowerCase().includes(filterText) ||
+        patient.user?.email?.toLowerCase().includes(filterText) ||
+        patient.numero_assurance?.toLowerCase().includes(filterText)
+      );
+    }
+
+    if (this.sexFilter) {
+      filteredData = filteredData.filter(patient => patient.sexe === this.sexFilter);
+    }
+
+    if (this.activeFilter) {
+      filteredData = filteredData.filter(patient => patient.user?.actif);
+    }
+
+    this.dataSource.data = filteredData;
+  }
+
   openCreatePatientDialog(): void {
-    // Structure conforme à ce que UserDialogComponent attend
     const dialogData: UserFormData = {
       nom: '',
       prenom: '',
@@ -114,12 +150,11 @@ export class PatientsComponent implements OnInit {
       role: 'patient',
       actif: true,
       telephone: '',
-      // Champs directement sur l'objet user, pas dans un sous-objet patient
       date_naissance: '',
       adresse: '',
       numero_assurance: '',
       sexe: 'M',
-      groupe_sanguin: ''
+      groupe_sanguin: '',
     };
 
     const dialogRef = this.dialog.open(UserDialogComponent, {
@@ -130,7 +165,6 @@ export class PatientsComponent implements OnInit {
     dialogRef.afterClosed().subscribe((result: UserFormData) => {
       console.log('PatientsComponent: Dialogue fermé. Résultat:', result);
       if (result) {
-        // Validation des champs obligatoires
         if (!result.prenom?.trim() || !result.nom?.trim() || !result.email?.trim() || !result.password?.trim()) {
           this.snackBar.open('Les champs prénom, nom, email et mot de passe sont obligatoires', 'Fermer', { duration: 3000 });
           return;
@@ -141,13 +175,11 @@ export class PatientsComponent implements OnInit {
           return;
         }
 
-        // Validation des champs spécifiques au patient
         if (!result.date_naissance || !result.adresse?.trim() || !result.sexe) {
           this.snackBar.open('La date de naissance, l\'adresse et le sexe sont obligatoires pour un patient', 'Fermer', { duration: 3000 });
           return;
         }
 
-        // Convertir vers le format attendu par l'API (structure imbriquée)
         const apiData = {
           nom: result.nom.trim(),
           prenom: result.prenom.trim(),
@@ -162,11 +194,10 @@ export class PatientsComponent implements OnInit {
             date_naissance: result.date_naissance,
             sexe: result.sexe,
             groupe_sanguin: result.groupe_sanguin?.trim() || '',
-            antecedent_medicaux: '' // Valeur par défaut
-          }
+            antecedent_medicaux: '',
+          },
         };
 
-        // Supprimer telephone si vide
         if (!apiData.telephone) {
           delete apiData.telephone;
         }
@@ -190,7 +221,7 @@ export class PatientsComponent implements OnInit {
               errorMessage = `Erreur serveur: ${error.message}`;
             }
             this.snackBar.open(errorMessage, 'Fermer', { duration: 8000 });
-          }
+          },
         });
       }
     });
@@ -202,7 +233,6 @@ export class PatientsComponent implements OnInit {
       return;
     }
 
-    // Convertir les données du patient vers le format attendu par UserDialog
     const dialogData: UserFormData = {
       id: patient.user.id,
       nom: patient.user.nom,
@@ -211,12 +241,11 @@ export class PatientsComponent implements OnInit {
       role: patient.user.role,
       actif: patient.user.actif,
       telephone: patient.user.telephone || '',
-      // Champs patient directement sur l'objet
       date_naissance: patient.date_naissance,
       adresse: patient.adresse,
       numero_assurance: patient.numero_assurance,
       sexe: patient.sexe,
-      groupe_sanguin: patient.groupe_sanguin || ''
+      groupe_sanguin: patient.groupe_sanguin || '',
     };
 
     const dialogRef = this.dialog.open(UserDialogComponent, {
@@ -226,7 +255,6 @@ export class PatientsComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((result: UserFormData) => {
       if (result && patient.user?.id) {
-        // Convertir vers le format API pour la mise à jour
         const apiData = {
           nom: result.nom.trim(),
           prenom: result.prenom.trim(),
@@ -240,7 +268,7 @@ export class PatientsComponent implements OnInit {
             date_naissance: result.date_naissance,
             sexe: result.sexe,
             groupe_sanguin: result.groupe_sanguin?.trim() || '',
-          }
+          },
         };
 
         if (!apiData.telephone) {
@@ -256,7 +284,7 @@ export class PatientsComponent implements OnInit {
             console.error('Erreur lors de la modification:', error);
             const errorMessage = error.message || 'Erreur lors de la modification du patient';
             this.snackBar.open(errorMessage, 'Fermer', { duration: 3000 });
-          }
+          },
         });
       }
     });
@@ -279,12 +307,13 @@ export class PatientsComponent implements OnInit {
         this.snackBar.open(newActiveState ? 'Patient activé' : 'Patient désactivé', 'Fermer', { duration: 2000 });
         userToToggle.actif = newActiveState;
         this.dataSource.data = [...this.dataSource.data];
+        this.applyFilter();
       },
       error: (error: ApiError) => {
         console.error('PatientsComponent: Erreur lors de la mise à jour du statut:', error);
         const errorMessage = error.message || 'Erreur lors de la mise à jour du statut';
         this.snackBar.open(errorMessage, 'Fermer', { duration: 3000 });
-      }
+      },
     });
   }
 
@@ -301,8 +330,8 @@ export class PatientsComponent implements OnInit {
       data: {
         message: `Voulez-vous supprimer le patient ${userToDelete.prenom} ${userToDelete.nom} ?`,
         confirmText: 'Oui',
-        cancelText: 'Non'
-      }
+        cancelText: 'Non',
+      },
     });
 
     dialogRef.afterClosed().subscribe(result => {
@@ -317,7 +346,7 @@ export class PatientsComponent implements OnInit {
             console.error('PatientsComponent: Erreur lors de la suppression:', error);
             const errorMessage = error.message || 'Erreur lors de la suppression du patient';
             this.snackBar.open(errorMessage, 'Fermer', { duration: 3000 });
-          }
+          },
         });
       }
     });

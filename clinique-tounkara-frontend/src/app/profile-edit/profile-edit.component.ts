@@ -12,6 +12,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { MatIcon } from "@angular/material/icon";
 
 interface User {
   id?: number;
@@ -53,8 +54,9 @@ interface User {
     MatNativeDateModule,
     MatProgressSpinnerModule,
     MatCheckboxModule,
-    MatSelectModule
-  ],
+    MatSelectModule,
+    MatIcon
+],
   templateUrl: './profile-edit.component.html',
   styleUrls: ['./profile-edit.component.scss']
 })

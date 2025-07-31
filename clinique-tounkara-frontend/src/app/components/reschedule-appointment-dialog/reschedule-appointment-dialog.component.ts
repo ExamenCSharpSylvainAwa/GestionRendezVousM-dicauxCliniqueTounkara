@@ -1,4 +1,3 @@
-// src/app/components/reschedule-appointment-dialog/reschedule-appointment-dialog.component.ts
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,14 +10,13 @@ import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
-
 import { ApiService, Appointment } from '../../services/api.service';
 import { ScheduleService, DaySchedule } from '../../services/schedule.service';
-import { forkJoin, Observable, throwError } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { forkJoin, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { HttpErrorResponse } from '@angular/common/http';
 
-// Définition des formats de date personnalisés pour Angular Material
+// Custom date formats for Angular Material
 export const MY_DATE_FORMATS = {
   parse: {
     dateInput: 'DD/MM/YYYY',
@@ -60,21 +58,22 @@ export interface RescheduleDialogResult {
     FormsModule,
     MatProgressSpinnerModule,
     MatIconModule,
-    MatSelectModule
+    MatSelectModule,
   ],
   templateUrl: './reschedule-appointment-dialog.component.html',
   styleUrls: ['./reschedule-appointment-dialog.component.scss'],
   providers: [
     { provide: MAT_DATE_LOCALE, useValue: 'fr-FR' },
     { provide: MAT_DATE_FORMATS, useValue: MY_DATE_FORMATS },
-    { provide: DateAdapter, useClass: NativeDateAdapter }
-  ]
+    { provide: DateAdapter, useClass: NativeDateAdapter },
+  ],
 })
 export class RescheduleAppointmentDialogComponent implements OnInit {
   newDate: Date | null = null;
   newTime: string = '';
   rescheduleReason: string = '';
   minDate: Date;
+  isLoading = false; // Added for loading state
 
   availableHours: string[] = [];
   noServiceMessage: string = '';
@@ -89,102 +88,111 @@ export class RescheduleAppointmentDialogComponent implements OnInit {
     private scheduleService: ScheduleService,
     private dateAdapter: DateAdapter<Date>
   ) {
-    // Définir la date minimum à aujourd'hui à minuit
+    // Set minimum date to today at midnight
     this.minDate = new Date();
     this.minDate.setHours(0, 0, 0, 0);
 
     this.dateAdapter.setLocale('fr-FR');
-    
-    console.log('CONSTRUCTOR - data reçue:', this.data);
-    console.log('CONSTRUCTOR - minDate définie à:', this.minDate);
+
+    console.log('CONSTRUCTOR - data received:', this.data);
+    console.log('CONSTRUCTOR - minDate set to:', this.minDate);
   }
 
   ngOnInit(): void {
-    console.log('ngOnInit: Initialisation du dialogue de report');
-    
-    // Valider les données requises
+    console.log('ngOnInit: Initializing reschedule dialog');
+
+    // Validate required data
     if (!this.validateInputData()) {
-      console.error('ngOnInit: Données d\'entrée invalides');
+      console.error('ngOnInit: Invalid input data');
       this.availabilityMessage = 'Erreur: Données du médecin manquantes';
       return;
     }
 
-    // Parser et sauvegarder la date originale du rendez-vous
+    // Parse and save the original appointment date
     this.originalAppointmentDate = this.parseOriginalDate();
-    
-    // Initialiser la nouvelle date avec la date actuelle du RDV si elle est valide
+
+    // Initialize new date with the current appointment date if valid
     if (this.originalAppointmentDate && !isNaN(this.originalAppointmentDate.getTime())) {
       this.newDate = this.originalAppointmentDate;
-      console.log('ngOnInit: newDate initialisée à la date actuelle du RDV:', this.newDate);
-      this.onDateChange({ value: this.newDate }); // Déclenche le chargement des créneaux
+      console.log('ngOnInit: newDate initialized to current appointment date:', this.newDate);
+      this.onDateChange({ value: this.newDate }); // Trigger slot loading
     } else {
-      this.newDate = null; // Aucune date pré-sélectionnée si la date originale est invalide
+      this.newDate = null;
       this.noServiceMessage = 'Veuillez sélectionner une nouvelle date pour voir les créneaux disponibles.';
-      console.log('ngOnInit: Aucune date par défaut - utilisateur doit choisir.');
+      console.log('ngOnInit: No default date - user must choose.');
     }
   }
 
   /**
-   * Valide que toutes les données nécessaires sont présentes
+   * Validates that all required data is present
    */
   private validateInputData(): boolean {
     return !!(
-      this.data.appointmentId && 
-      this.data.doctorMedecinId && 
-      this.data.doctorUserId && 
+      this.data.appointmentId &&
+      this.data.doctorMedecinId &&
+      this.data.doctorUserId &&
       this.data.doctorName
     );
   }
 
   /**
-   * Parse la date originale du rendez-vous pour référence
+   * Parses the original appointment date for reference
    */
   private parseOriginalDate(): Date | null {
     if (!this.data.currentDate) {
-      console.warn('parseOriginalDate: Pas de date courante fournie');
+      console.warn('parseOriginalDate: No current date provided');
       return null;
     }
 
     const dateStr = this.data.currentDate.toString().trim();
-    console.log('parseOriginalDate: Tentative de parsing de:', dateStr);
+    console.log('parseOriginalDate: Attempting to parse:', dateStr);
 
     try {
       let parsedDate: Date | null = null;
 
-      // Tenter de parser le format "lundi 21 juillet 2025 à 15:30"
+      // Try parsing French format "lundi 21 juillet 2025 à 15:30"
       if (dateStr.includes(' à ')) {
         parsedDate = this.parseFrenchDateTimeFormat(dateStr);
       }
-      
-      // Si ce n'est pas ce format, tenter le parsing ISO ou standard
+
+      // If not that format, try ISO or standard parsing
       if (!parsedDate || isNaN(parsedDate.getTime())) {
-        parsedDate = new Date(dateStr); 
+        parsedDate = new Date(dateStr);
         if (isNaN(parsedDate.getTime())) {
-          parsedDate = this.parseManualFormats(dateStr); // Tenter les formats DD/MM/YYYY etc.
+          parsedDate = this.parseManualFormats(dateStr); // Try DD/MM/YYYY etc.
         }
       }
 
       if (parsedDate && !isNaN(parsedDate.getTime())) {
-        console.log('parseOriginalDate: Date parsée avec succès:', parsedDate);
+        console.log('parseOriginalDate: Successfully parsed date:', parsedDate);
         return parsedDate;
       }
-
     } catch (error) {
-      console.error('parseOriginalDate: Erreur lors du parsing:', error);
+      console.error('parseOriginalDate: Error parsing:', error);
     }
 
-    console.warn('parseOriginalDate: Impossible de parser la date:', dateStr);
+    console.warn('parseOriginalDate: Unable to parse date:', dateStr);
     return null;
   }
 
   /**
-   * Parse le format français "lundi 21 juillet 2025 à 15:30"
+   * Parses French format "lundi 21 juillet 2025 à 15:30"
    */
   private parseFrenchDateTimeFormat(dateStr: string): Date | null {
     try {
       const frenchMonths: { [key: string]: number } = {
-        'janvier': 0, 'février': 1, 'mars': 2, 'avril': 3, 'mai': 4, 'juin': 5,
-        'juillet': 6, 'août': 7, 'septembre': 8, 'octobre': 9, 'novembre': 10, 'décembre': 11
+        janvier: 0,
+        février: 1,
+        mars: 2,
+        avril: 3,
+        mai: 4,
+        juin: 5,
+        juillet: 6,
+        août: 7,
+        septembre: 8,
+        octobre: 9,
+        novembre: 10,
+        décembre: 11,
       };
 
       const regex = /(\d{1,2})\s+(\w+)\s+(\d{4})\s+à\s+(\d{1,2}):(\d{2})/i;
@@ -198,7 +206,7 @@ export class RescheduleAppointmentDialogComponent implements OnInit {
         const minutes = parseInt(match[5]);
 
         const month = frenchMonths[monthName];
-        
+
         if (month !== undefined) {
           const date = new Date(year, month, day, hours, minutes);
           if (!isNaN(date.getTime())) {
@@ -207,22 +215,22 @@ export class RescheduleAppointmentDialogComponent implements OnInit {
         }
       }
     } catch (error) {
-      console.error('parseFrenchDateTimeFormat: Erreur:', error);
+      console.error('parseFrenchDateTimeFormat: Error:', error);
     }
     return null;
   }
 
   /**
-   * Parse d'autres formats manuellement (DD/MM/YYYY, DD-MM-YYYY)
+   * Parses other formats manually (DD/MM/YYYY, DD-MM-YYYY)
    */
   private parseManualFormats(dateStr: string): Date | null {
     try {
-      // Format DD/MM/YYYY ou DD/MM/YYYY HH:mm
+      // Format DD/MM/YYYY or DD/MM/YYYY HH:mm
       if (dateStr.includes('/')) {
         const parts = dateStr.split(/[/\s:]/);
         if (parts.length >= 3) {
           const day = parseInt(parts[0]);
-          const month = parseInt(parts[1]) - 1; // 0-indexé
+          const month = parseInt(parts[1]) - 1; // 0-indexed
           const year = parseInt(parts[2]);
           const hours = parts.length > 3 ? parseInt(parts[3]) : 0;
           const minutes = parts.length > 4 ? parseInt(parts[4]) : 0;
@@ -249,187 +257,197 @@ export class RescheduleAppointmentDialogComponent implements OnInit {
         }
       }
     } catch (error) {
-      console.error('parseManualFormats: Erreur:', error);
+      console.error('parseManualFormats: Error:', error);
     }
     return null;
   }
 
+  /**
+   * Handles the cancel action
+   */
   onCancel(): void {
     this.dialogRef.close({ confirmed: false });
   }
 
+  /**
+   * Handles the confirm action
+   */
   async onConfirm(): Promise<void> {
-    // Validation des champs requis
+    // Validate required fields
     if (!this.newDate || !this.newTime || !this.rescheduleReason.trim()) {
-      this.showError("Veuillez sélectionner une nouvelle date, une heure et fournir un motif de report.");
+      this.showError('Veuillez sélectionner une nouvelle date, une heure et fournir un motif de report.');
       return;
     }
 
-    // Créer la nouvelle date/heure
+    // Create new date/time
     const newDateTime = this.createNewDateTime();
     if (!newDateTime) {
-      this.showError("Erreur lors de la création de la nouvelle date/heure.");
+      this.showError('Erreur lors de la création de la nouvelle date/heure.');
       return;
     }
 
-    // Vérifier que la nouvelle date est différente de l'originale
+    // Check if new date is different from original
     if (this.originalAppointmentDate && this.isSameDateTime(newDateTime, this.originalAppointmentDate)) {
-      this.showError("Veuillez choisir une date et heure différentes de celles actuelles.");
+      this.showError('Veuillez choisir une date et heure différentes de celles actuelles.');
       return;
     }
 
-    // Vérifier que c'est dans le futur
+    // Check if date is in the future
     if (newDateTime <= new Date()) {
-      this.showError("La nouvelle date et heure doivent être dans le futur.");
+      this.showError('La nouvelle date et heure doivent être dans le futur.');
       return;
     }
 
-    // Vérification finale de disponibilité
+    this.isLoading = true;
+
+    // Final availability check
     if (!(await this.finalAvailabilityCheck())) {
+      this.isLoading = false;
       return;
     }
 
-    // Confirmer le report
+    // Confirm rescheduling
     this.dialogRef.close({
       confirmed: true,
       newDateHeure: newDateTime.toISOString(),
-      reason: this.rescheduleReason.trim()
+      reason: this.rescheduleReason.trim(),
     } as RescheduleDialogResult);
+    this.isLoading = false;
   }
 
   /**
-   * Crée un nouvel objet Date avec la date et l'heure sélectionnées
+   * Creates a new Date object with selected date and time
    */
   private createNewDateTime(): Date | null {
     try {
       const newDateTime = new Date(this.newDate!);
       const [hours, minutes] = this.newTime.split(':').map(Number);
-      
+
       if (isNaN(hours) || isNaN(minutes)) {
-        console.error('createNewDateTime: Heure invalide:', this.newTime);
+        console.error('createNewDateTime: Invalid time:', this.newTime);
         return null;
       }
-      
+
       newDateTime.setHours(hours, minutes, 0, 0);
       return newDateTime;
     } catch (error) {
-      console.error('createNewDateTime: Erreur:', error);
+      console.error('createNewDateTime: Error:', error);
       return null;
     }
   }
 
   /**
-   * Compare deux dates/heures pour vérifier si elles sont identiques
+   * Compares two dates/times to check if they are identical
    */
   private isSameDateTime(date1: Date, date2: Date): boolean {
-    return Math.abs(date1.getTime() - date2.getTime()) < 60000; // Tolérance de 1 minute
+    return Math.abs(date1.getTime() - date2.getTime()) < 60000; // 1-minute tolerance
   }
 
   /**
-   * Vérification finale de disponibilité avant confirmation
+   * Final availability check before confirmation
    */
   private async finalAvailabilityCheck(): Promise<boolean> {
-  this.isCheckingSchedule = true;
-  
-  try {
-    const dateString = this.formatDateToYYYYMMDD(this.newDate!);
-    console.log('finalAvailabilityCheck: Vérification pour', dateString);
-    
-    // Appeler avec le flag pour préserver l'heure sélectionnée
-    await this.getAvailableHours(dateString, true);
-    
-    // Vérifier si l'utilisateur a sélectionné une heure
-    if (!this.newTime) {
-      this.showError("Veuillez sélectionner une heure pour le nouveau rendez-vous.");
-      return false;
-    }
+    this.isCheckingSchedule = true;
 
-    if (!this.availableHours.includes(this.newTime)) {
-      this.showError("Le créneau sélectionné n'est plus disponible. Veuillez choisir un autre créneau.");
+    try {
+      const dateString = this.formatDateToYYYYMMDD(this.newDate!);
+      console.log('finalAvailabilityCheck: Checking for', dateString);
+
+      // Call with flag to preserve selected time
+      await this.getAvailableHours(dateString, true);
+
+      // Check if a time is selected
+      if (!this.newTime) {
+        this.showError('Veuillez sélectionner une heure pour le nouveau rendez-vous.');
+        return false;
+      }
+
+      if (!this.availableHours.includes(this.newTime)) {
+        this.showError('Le créneau sélectionné n’est plus disponible. Veuillez choisir un autre créneau.');
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('finalAvailabilityCheck: Error:', error);
+      this.showError('Erreur lors de la vérification de disponibilité. Veuillez réessayer.');
       return false;
+    } finally {
+      this.isCheckingSchedule = false;
     }
-    
-    return true;
-  } catch (error) {
-    console.error("finalAvailabilityCheck: Erreur:", error);
-    this.showError("Erreur lors de la vérification de disponibilité. Veuillez réessayer.");
-    return false;
-  } finally {
-    this.isCheckingSchedule = false;
   }
-}
 
   /**
-   * Affiche un message d'erreur à l'utilisateur
+   * Displays an error message to the user
    */
   private showError(message: string): void {
-    // Vous pouvez remplacer ceci par votre système de notification préféré
+    // Replace with your preferred notification system (e.g., MatSnackBar)
     alert(message);
     console.error('showError:', message);
   }
 
   /**
-   * Gère le changement de date dans le datepicker
+   * Handles date change in the datepicker
    */
   onDateChange(event: any): void {
     console.log('--- onDateChange START ---');
-    console.log('onDateChange: Event reçu:', event);
+    console.log('onDateChange: Received event:', event);
 
     let selectedDate: Date | null = null;
 
-    // Tenter d'extraire la date de l'événement (méthode préférée)
+    // Try extracting date from event (preferred method)
     if (event?.value instanceof Date && !isNaN(event.value.getTime())) {
       selectedDate = event.value;
-      console.log('onDateChange: Date valide directement de event.value:', selectedDate);
-    } 
-    // Si l'événement ne contient pas une date valide, tenter de parser la valeur de l'input
+      console.log('onDateChange: Valid date directly from event.value:', selectedDate);
+    }
+    // If event doesn’t contain a valid date, try parsing input value
     else if (event?.target?.value) {
-      console.warn('onDateChange: event.value est invalide. Tentative de parsing de event.target.value:', event.target.value);
+      console.warn('onDateChange: event.value is invalid. Attempting to parse event.target.value:', event.target.value);
       selectedDate = this.parseDateFromInput(event.target.value);
       if (selectedDate && !isNaN(selectedDate.getTime())) {
-        console.log('onDateChange: Date parsée avec succès depuis event.target.value:', selectedDate);
+        console.log('onDateChange: Successfully parsed date from event.target.value:', selectedDate);
       } else {
-        console.error('onDateChange: Échec du parsing de event.target.value:', event.target.value);
+        console.error('onDateChange: Failed to parse event.target.value:', event.target.value);
       }
-    } 
-    // Cas où l'événement est directement un objet Date (ex: depuis ngOnInit)
+    }
+    // Case where event is directly a Date object (e.g., from ngOnInit)
     else if (event instanceof Date && !isNaN(event.getTime())) {
       selectedDate = event;
-      console.log('onDateChange: Date valide directement de l\'événement (objet Date):', selectedDate);
+      console.log('onDateChange: Valid date directly from event (Date object):', selectedDate);
     } else {
-      console.error('onDateChange: Aucune date valide n\'a pu être extraite de l\'événement.');
+      console.error('onDateChange: No valid date could be extracted from event.');
     }
 
-    console.log('onDateChange: Date extraite après toutes les tentatives de parsing:', selectedDate);
+    console.log('onDateChange: Extracted date after all parsing attempts:', selectedDate);
 
-    // Validation et assignation
+    // Validation and assignment
     if (selectedDate instanceof Date && !isNaN(selectedDate.getTime())) {
-      // Vérifier que la date est dans le futur ou aujourd'hui
+      // Ensure date is today or in the future
       const today = new Date();
-      today.setHours(0, 0, 0, 0); // Réinitialiser l'heure pour la comparaison de date seule
-      
+      today.setHours(0, 0, 0, 0);
+
       if (selectedDate < today && selectedDate.toDateString() !== today.toDateString()) {
-        console.error('onDateChange: Date dans le passé rejetée:', selectedDate);
-        this.showError("Veuillez sélectionner une date dans le futur ou la date d'aujourd'hui.");
-        this.newDate = null; // Réinitialiser pour forcer une nouvelle sélection
+        console.error('onDateChange: Past date rejected:', selectedDate);
+        this.showError('Veuillez sélectionner une date dans le futur ou la date d’aujourd’hui.');
+        this.newDate = null;
         this.resetTimeAndAvailability();
         return;
       }
 
       this.newDate = selectedDate;
-      this.resetTimeAndAvailability(); // Réinitialise l'heure et les messages
-      this.loadAvailableSlotsForDate(); // Charge les créneaux pour la nouvelle date
+      this.resetTimeAndAvailability();
+      this.loadAvailableSlotsForDate();
     } else {
-      console.error('onDateChange: Date finale invalide ou nulle. Aucun changement appliqué.');
-      this.newDate = null; // Assurez-vous que newDate est null si la sélection est invalide
-      this.showError("Date invalide. Veuillez sélectionner une date valide.");
+      console.error('onDateChange: Invalid or null final date. No changes applied.');
+      this.newDate = null;
+      this.showError('Date invalide. Veuillez sélectionner une date valide.');
       this.resetTimeAndAvailability();
     }
     console.log('--- onDateChange END ---');
   }
 
   /**
-   * Parse une date à partir d'un input texte (format DD/MM/YYYY)
+   * Parses a date from a text input (DD/MM/YYYY)
    */
   private parseDateFromInput(inputValue: string): Date | null {
     if (!inputValue || !inputValue.includes('/')) {
@@ -440,221 +458,215 @@ export class RescheduleAppointmentDialogComponent implements OnInit {
       const parts = inputValue.split('/');
       if (parts.length === 3) {
         const day = parseInt(parts[0]);
-        const month = parseInt(parts[1]) - 1; // Les mois sont 0-indexés
+        const month = parseInt(parts[1]) - 1; // 0-indexed
         const year = parseInt(parts[2]);
-        
+
         if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
           return new Date(year, month, day);
         }
       }
     } catch (error) {
-      console.error('parseDateFromInput: Erreur de parsing:', error);
+      console.error('parseDateFromInput: Parsing error:', error);
     }
 
     return null;
   }
 
   /**
-   * Réinitialise les champs liés à l'heure et à la disponibilité
+   * Resets time and availability fields
    */
   private resetTimeAndAvailability(): void {
     this.newTime = '';
     this.availableHours = [];
     this.availabilityMessage = '';
     this.noServiceMessage = '';
-    console.log('resetTimeAndAvailability: Champs d\'heure et de disponibilité réinitialisés.');
+    console.log('resetTimeAndAvailability: Time and availability fields reset.');
   }
 
   /**
-   * Filtre les dates dans le datepicker
+   * Filters dates in the datepicker
    */
   dateFilter = (d: Date | null): boolean => {
     if (!d) return false;
-    
-    // Autorise la date d'aujourd'hui et les dates futures
+
+    // Allow today and future dates
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Pour comparer uniquement la date
-    
+    today.setHours(0, 0, 0, 0);
     return d.getTime() >= today.getTime();
   };
 
   /**
-   * Charge les créneaux disponibles pour la date sélectionnée
+   * Loads available slots for the selected date
    */
   private loadAvailableSlotsForDate(): void {
     if (this.newDate && !isNaN(this.newDate.getTime())) {
       const dateString = this.formatDateToYYYYMMDD(this.newDate);
-      console.log('loadAvailableSlotsForDate: Chargement pour', dateString);
+      console.log('loadAvailableSlotsForDate: Loading for', dateString);
       this.getAvailableHours(dateString);
     } else {
-      console.warn('loadAvailableSlotsForDate: newDate est invalide, ne peut pas charger les créneaux.');
+      console.warn('loadAvailableSlotsForDate: Invalid newDate, cannot load slots.');
     }
   }
 
   /**
-   * Récupère les créneaux horaires disponibles
+   * Retrieves available time slots
    */
   private getAvailableHours(date: string, preserveSelectedTime: boolean = false): Promise<void> {
-  console.log('getAvailableHours: Début pour la date:', date);
-  
-  // Validation des paramètres
-  if (!this.data.doctorMedecinId || !this.data.doctorUserId || !date || date === 'NaN-NaN-NaN') {
-    this.setNoSlotsAvailable('Veuillez sélectionner une date valide.');
-    console.warn('getAvailableHours: Paramètres invalides, skipping API call.');
-    return Promise.resolve();
-  }
+    console.log('getAvailableHours: Starting for date:', date);
 
-  this.isCheckingSchedule = true;
-  
-  // Sauvegarder l'heure sélectionnée si nécessaire
-  const selectedTime = preserveSelectedTime ? this.newTime : '';
-  
-  // Ne réinitialiser que si on ne préserve pas l'heure sélectionnée
-  if (!preserveSelectedTime) {
-    this.resetTimeAndAvailability(); 
-  } else {
-    // Réinitialiser seulement les messages
-    this.availabilityMessage = '';
-    this.noServiceMessage = '';
-  }
+    // Validate parameters
+    if (!this.data.doctorMedecinId || !this.data.doctorUserId || !date || date === 'NaN-NaN-NaN') {
+      this.setNoSlotsAvailable('Veuillez sélectionner une date valide.');
+      console.warn('getAvailableHours: Invalid parameters, skipping API call.');
+      return Promise.resolve();
+    }
 
-  const { doctorUserId, doctorMedecinId, doctorName } = this.data;
+    this.isCheckingSchedule = true;
 
-  return new Promise((resolve, reject) => {
-    forkJoin({
-      schedules: this.scheduleService.getScheduleByMedecinAndDate(doctorUserId, date),
-      existingAppointments: this.apiService.getAppointmentsForDoctorAndDate(doctorMedecinId, date)
-    }).pipe(
-      catchError((error: HttpErrorResponse) => {
-        console.error('getAvailableHours: Erreur API:', error);
-        this.setNoSlotsAvailable(
-          `Impossible de vérifier les horaires du ${doctorName} pour le ${this.formatDate(date)}. Veuillez réessayer.`
-        );
-        return throwError(() => error);
+    // Save selected time if preserving
+    const selectedTime = preserveSelectedTime ? this.newTime : '';
+
+    // Reset only if not preserving selected time
+    if (!preserveSelectedTime) {
+      this.resetTimeAndAvailability();
+    } else {
+      // Reset only messages
+      this.availabilityMessage = '';
+      this.noServiceMessage = '';
+    }
+
+    const { doctorUserId, doctorMedecinId, doctorName } = this.data;
+
+    return new Promise((resolve, reject) => {
+      forkJoin({
+        schedules: this.scheduleService.getScheduleByMedecinAndDate(doctorUserId, date),
+        existingAppointments: this.apiService.getAppointmentsForDoctorAndDate(doctorMedecinId, date),
       })
-    ).subscribe({
-      next: ({ schedules, existingAppointments }) => {
-        console.log('getAvailableHours: Données reçues:', { schedules, existingAppointments });
-        this.processSchedulesAndAppointments(schedules, existingAppointments, doctorName, date);
-        
-        // Restaurer l'heure sélectionnée si elle était préservée
-        if (preserveSelectedTime && selectedTime) {
-          this.newTime = selectedTime;
-          console.log('getAvailableHours: Heure restaurée après traitement:', this.newTime);
-        }
-        
-        resolve();
-      },
-      error: (err) => {
-        this.isCheckingSchedule = false;
-        reject(err);
-      }
+        .pipe(
+          catchError((error: HttpErrorResponse) => {
+            console.error('getAvailableHours: API error:', error);
+            this.setNoSlotsAvailable(
+              `Impossible de vérifier les horaires du ${doctorName} pour le ${this.formatDate(date)}. Veuillez réessayer.`
+            );
+            return throwError(() => error);
+          })
+        )
+        .subscribe({
+          next: ({ schedules, existingAppointments }) => {
+            console.log('getAvailableHours: Data received:', { schedules, existingAppointments });
+            this.processSchedulesAndAppointments(schedules, existingAppointments, doctorName, date);
+
+            // Restore selected time if preserved
+            if (preserveSelectedTime && selectedTime) {
+              this.newTime = selectedTime;
+              console.log('getAvailableHours: Restored time after processing:', this.newTime);
+            }
+
+            resolve();
+          },
+          error: (err) => {
+            this.isCheckingSchedule = false;
+            reject(err);
+          },
+        });
     });
-  });
-}
+  }
 
   /**
-   * Traite les horaires et rendez-vous pour calculer les créneaux disponibles
+   * Processes schedules and appointments to calculate available slots
    */
   private processSchedulesAndAppointments(
-    schedules: DaySchedule[], 
-    existingAppointments: Appointment[], 
-    doctorName: string, 
+    schedules: DaySchedule[],
+    existingAppointments: Appointment[],
+    doctorName: string,
     date: string
   ): void {
     this.isCheckingSchedule = false;
-    console.log('processSchedulesAndAppointments: Début du traitement.');
+    console.log('processSchedulesAndAppointments: Starting processing.');
 
-    // Vérifier s'il y a des horaires définis
+    // Check if schedules exist
     if (!schedules || schedules.length === 0) {
-      this.setNoSlotsAvailable(`${doctorName} n'est pas en service le ${this.formatDate(date)}.`);
-      console.log('processSchedulesAndAppointments: Aucun horaire trouvé.');
+      this.setNoSlotsAvailable(`${doctorName} n’est pas en service le ${this.formatDate(date)}.`);
+      console.log('processSchedulesAndAppointments: No schedules found.');
       return;
     }
 
-    // Filtrer les horaires disponibles
+    // Filter available schedules
     const workingSchedules = schedules.filter((schedule: DaySchedule) => schedule.is_available);
-    console.log('processSchedulesAndAppointments: Horaires de travail filtrés:', workingSchedules);
-    
+    console.log('processSchedulesAndAppointments: Filtered working schedules:', workingSchedules);
+
     if (workingSchedules.length === 0) {
-      this.setNoSlotsAvailable(`${doctorName} n'a pas d'horaires de travail disponibles le ${this.formatDate(date)}.`);
-      console.log('processSchedulesAndAppointments: Aucun horaire de travail disponible après filtrage.');
+      this.setNoSlotsAvailable(`${doctorName} n’a pas d’horaires de travail disponibles le ${this.formatDate(date)}.`);
+      console.log('processSchedulesAndAppointments: No available working schedules after filtering.');
       return;
     }
 
-    // Calculer les créneaux disponibles
+    // Calculate available slots
     this.calculateAvailableSlots(workingSchedules, existingAppointments, doctorName, date);
-    console.log('processSchedulesAndAppointments: availableHours (après calcul):', this.availableHours);
-    console.log('processSchedulesAndAppointments: availableHours.length (après calcul):', this.availableHours.length);
+    console.log('processSchedulesAndAppointments: availableHours (after calculation):', this.availableHours);
   }
 
   /**
-   * Calcule les créneaux disponibles
+   * Calculates available slots
    */
   private calculateAvailableSlots(
-    workingSchedules: DaySchedule[], 
-    existingAppointments: Appointment[], 
-    doctorName: string, 
+    workingSchedules: DaySchedule[],
+    existingAppointments: Appointment[],
+    doctorName: string,
     date: string
   ): void {
-    console.log('calculateAvailableSlots: Début du calcul des créneaux.');
-    // Récupérer les heures occupées (rendez-vous confirmés)
+    console.log('calculateAvailableSlots: Starting slot calculation.');
+    // Get occupied hours (confirmed or pending appointments)
     const occupiedHours = this.getOccupiedHours(existingAppointments);
-    console.log('calculateAvailableSlots: Heures occupées:', occupiedHours);
-    
-    // Générer tous les créneaux possibles
+    console.log('calculateAvailableSlots: Occupied hours:', occupiedHours);
+
+    // Generate all possible slots
     const allSlots = this.generateHourSlots();
-    console.log('calculateAvailableSlots: Tous les créneaux générés:', allSlots.length);
-    
-    // Filtrer les créneaux dans les heures de travail
-    const slotsInWorkingTime = allSlots.filter(hour => 
+    console.log('calculateAvailableSlots: All generated slots:', allSlots.length);
+
+    // Filter slots within working hours
+    const slotsInWorkingTime = allSlots.filter((hour) =>
       this.isTimeInWorkingSchedule(hour, workingSchedules, date)
     );
-    console.log('calculateAvailableSlots: Créneaux dans les heures de travail:', slotsInWorkingTime);
-    
-    // Exclure les créneaux occupés
-    const availableSlotsInWorkingTime = slotsInWorkingTime.filter(hour => 
-      !occupiedHours.includes(hour)
-    );
-    console.log('calculateAvailableSlots: Créneaux disponibles après exclusion des occupés:', availableSlotsInWorkingTime);
-    
-    // Exclure le créneau actuel du rendez-vous (pour éviter de "reporter" au même créneau)
-    const finalAvailableSlots = this.excludeCurrentAppointmentSlot(
-      availableSlotsInWorkingTime, 
-      date
-    );
-    console.log('calculateAvailableSlots: Créneaux après exclusion du créneau actuel:', finalAvailableSlots);
-    
-    // Filtrer les créneaux passés si c'est aujourd'hui
-    const futureSlots = this.filterPastSlots(finalAvailableSlots, date);
-    console.log('calculateAvailableSlots: Créneaux futurs (si aujourd\'hui):', futureSlots);
+    console.log('calculateAvailableSlots: Slots within working hours:', slotsInWorkingTime);
 
-    // Mettre à jour l'état
+    // Exclude occupied slots
+    const availableSlotsInWorkingTime = slotsInWorkingTime.filter(
+      (hour) => !occupiedHours.includes(hour)
+    );
+    console.log('calculateAvailableSlots: Available slots after excluding occupied:', availableSlotsInWorkingTime);
+
+    // Exclude current appointment slot
+    const finalAvailableSlots = this.excludeCurrentAppointmentSlot(availableSlotsInWorkingTime, date);
+    console.log('calculateAvailableSlots: Slots after excluding current slot:', finalAvailableSlots);
+
+    // Filter past slots if today
+    const futureSlots = this.filterPastSlots(finalAvailableSlots, date);
+    console.log('calculateAvailableSlots: Future slots (if today):', futureSlots);
+
+    // Update state
     this.updateAvailabilityState(futureSlots, slotsInWorkingTime.length > 0, doctorName, date);
-    console.log('calculateAvailableSlots: Fin du calcul des créneaux.');
+    console.log('calculateAvailableSlots: Slot calculation complete.');
   }
 
   /**
-   * Récupère les heures occupées par les rendez-vous existants
+   * Gets occupied hours from existing appointments
    */
   private getOccupiedHours(existingAppointments: Appointment[]): string[] {
     return existingAppointments
-      .filter(appointment => 
-        appointment.statut === 'confirme' || 
-        appointment.statut === 'en_attente'
-      )
-      .map(appointment => {
+      .filter((appointment) => appointment.statut === 'confirme' || appointment.statut === 'en_attente')
+      .map((appointment) => {
         const appointmentDate = new Date(appointment.date_heure);
         return appointmentDate.toLocaleTimeString('fr-FR', {
           hour: '2-digit',
           minute: '2-digit',
-          hour12: false
+          hour12: false,
         });
       });
   }
 
   /**
-   * Exclut le créneau actuel du rendez-vous à reporter
+   * Excludes the current appointment slot
    */
   private excludeCurrentAppointmentSlot(availableSlots: string[], selectedDate: string): string[] {
     if (!this.originalAppointmentDate) {
@@ -662,79 +674,79 @@ export class RescheduleAppointmentDialogComponent implements OnInit {
     }
 
     const originalDateStr = this.formatDateToYYYYMMDD(this.originalAppointmentDate);
-    
-    // Si ce n'est pas la même date, pas besoin d'exclure
+
+    // If not the same date, no need to exclude
     if (originalDateStr !== selectedDate) {
       return availableSlots;
     }
 
-    // Exclure le créneau actuel
+    // Exclude the current slot
     const currentTimeSlot = this.originalAppointmentDate.toLocaleTimeString('fr-FR', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false
+      hour12: false,
     });
-    console.log('excludeCurrentAppointmentSlot: Exclusion du créneau actuel:', currentTimeSlot);
+    console.log('excludeCurrentAppointmentSlot: Excluding current slot:', currentTimeSlot);
 
-    return availableSlots.filter(slot => slot !== currentTimeSlot);
+    return availableSlots.filter((slot) => slot !== currentTimeSlot);
   }
 
   /**
-   * Filtre les créneaux passés pour aujourd'hui
+   * Filters past slots for today
    */
   private filterPastSlots(slots: string[], selectedDate: string): string[] {
     const today = new Date();
     const selectedDateObj = new Date(selectedDate);
-    
-    // Si ce n'est pas aujourd'hui, retourner tous les créneaux
+
+    // If not today, return all slots
     if (selectedDateObj.toDateString() !== today.toDateString()) {
-      console.log('filterPastSlots: Date sélectionnée n\'est pas aujourd\'hui, pas de filtrage des créneaux passés.');
+      console.log('filterPastSlots: Selected date is not today, no past slot filtering.');
       return slots;
     }
 
-    // Filtrer les créneaux passés avec une marge de 30 minutes
+    // Filter past slots with a 30-minute margin
     const currentTimeInMinutes = today.getHours() * 60 + today.getMinutes();
-    
-    const filteredSlots = slots.filter(hour => {
+
+    const filteredSlots = slots.filter((hour) => {
       const [hourNum, minuteNum] = hour.split(':').map(Number);
       const slotTimeInMinutes = hourNum * 60 + minuteNum;
       const isPast = slotTimeInMinutes <= currentTimeInMinutes + 30;
       if (isPast) {
-        console.log(`filterPastSlots: Créneau ${hour} est dans le passé (+30min), filtré.`);
+        console.log(`filterPastSlots: Slot ${hour} is past (+30min), filtered out.`);
       }
       return !isPast;
     });
-    console.log('filterPastSlots: Créneaux après filtrage des passés:', filteredSlots);
+    console.log('filterPastSlots: Slots after filtering past:', filteredSlots);
     return filteredSlots;
   }
 
   /**
-   * Met à jour l'état de disponibilité
+   * Updates availability state
    */
   private updateAvailabilityState(
-    finalSlots: string[], 
-    hasWorkingHours: boolean, 
-    doctorName: string, 
+    finalSlots: string[],
+    hasWorkingHours: boolean,
+    doctorName: string,
     date: string
   ): void {
     this.availableHours = finalSlots;
-    console.log('updateAvailabilityState: availableHours mis à jour à:', this.availableHours);
+    console.log('updateAvailabilityState: availableHours updated to:', this.availableHours);
 
     if (!hasWorkingHours) {
-      this.setNoSlotsAvailable(`${doctorName} n'a pas d'horaires de travail le ${this.formatDate(date)}.`);
-      console.log('updateAvailabilityState: Pas d\'horaires de travail.');
+      this.setNoSlotsAvailable(`${doctorName} n’a pas d’horaires de travail le ${this.formatDate(date)}.`);
+      console.log('updateAvailabilityState: No working hours.');
     } else if (finalSlots.length === 0) {
-      this.setNoSlotsAvailable(`${doctorName} n'a plus de créneaux disponibles le ${this.formatDate(date)}.`);
-      console.log('updateAvailabilityState: Aucun créneau disponible.');
+      this.setNoSlotsAvailable(`${doctorName} n’a plus de créneaux disponibles le ${this.formatDate(date)}.`);
+      console.log('updateAvailabilityState: No available slots.');
     } else {
       this.noServiceMessage = '';
       this.availabilityMessage = `✅ ${finalSlots.length} créneaux disponibles`;
-      console.log('updateAvailabilityState: Créneaux disponibles.');
+      console.log('updateAvailabilityState: Slots available.');
     }
   }
 
   /**
-   * Définit l'état "aucun créneau disponible"
+   * Sets "no slots available" state
    */
   private setNoSlotsAvailable(message: string): void {
     this.availableHours = [];
@@ -745,16 +757,16 @@ export class RescheduleAppointmentDialogComponent implements OnInit {
   }
 
   /**
-   * Vérifie si un créneau horaire est dans les horaires de travail
+   * Checks if a time slot is within working schedules
    */
   private isTimeInWorkingSchedule(timeSlot: string, workingSchedules: DaySchedule[], selectedDateString: string): boolean {
     const selectedDateTime = new Date(`${selectedDateString}T${timeSlot}`);
-    console.log(`isTimeInWorkingSchedule: Vérification du créneau ${timeSlot} pour le ${selectedDateString}. selectedDateTime (locale): ${selectedDateTime.toLocaleString()}`);
+    console.log(`isTimeInWorkingSchedule: Checking slot ${timeSlot} for ${selectedDateString}. selectedDateTime (locale): ${selectedDateTime.toLocaleString()}`);
 
-    return workingSchedules.some(schedule => {
-      console.log('  isTimeInWorkingSchedule: Horaire du médecin:', schedule);
+    return workingSchedules.some((schedule) => {
+      console.log('  isTimeInWorkingSchedule: Doctor schedule:', schedule);
       if (!schedule.start_time || !schedule.end_time) {
-        console.log('  isTimeInWorkingSchedule: Horaire manquant start_time ou end_time. Ignoré.');
+        console.log('  isTimeInWorkingSchedule: Missing start_time or end_time. Ignored.');
         return false;
       }
 
@@ -762,31 +774,31 @@ export class RescheduleAppointmentDialogComponent implements OnInit {
       const scheduleEnd = new Date(`${selectedDateString}T${schedule.end_time}`);
       console.log(`  isTimeInWorkingSchedule: scheduleStart (locale): ${scheduleStart.toLocaleString()}, scheduleEnd (locale): ${scheduleEnd.toLocaleString()}`);
 
-      // Vérifier si le créneau est dans les heures de travail
+      // Check if slot is within working hours
       if (selectedDateTime >= scheduleStart && selectedDateTime < scheduleEnd) {
-        console.log(`  isTimeInWorkingSchedule: Créneau ${timeSlot} est dans les heures de travail.`);
-        // Vérifier s'il y a une pause et si le créneau tombe dedans
+        console.log(`  isTimeInWorkingSchedule: Slot ${timeSlot} is within working hours.`);
+        // Check for breaks
         if (schedule.break_start && schedule.end_break) {
           const breakStart = new Date(`${selectedDateString}T${schedule.break_start}`);
           const breakEnd = new Date(`${selectedDateString}T${schedule.end_break}`);
-          console.log(`  isTimeInWorkingSchedule: Pause: ${breakStart.toLocaleString()} à ${breakEnd.toLocaleString()}`);
+          console.log(`  isTimeInWorkingSchedule: Break: ${breakStart.toLocaleString()} to ${breakEnd.toLocaleString()}`);
 
-          // Si c'est pendant la pause, ce n'est pas disponible
+          // If slot is during break, it’s not available
           if (selectedDateTime >= breakStart && selectedDateTime < breakEnd) {
-            console.log(`  isTimeInWorkingSchedule: Créneau ${timeSlot} est pendant la pause. Non disponible.`);
+            console.log(`  isTimeInWorkingSchedule: Slot ${timeSlot} is during break. Not available.`);
             return false;
           }
         }
-        console.log(`  isTimeInWorkingSchedule: Créneau ${timeSlot} est disponible.`);
+        console.log(`  isTimeInWorkingSchedule: Slot ${timeSlot} is available.`);
         return true;
       }
-      console.log(`  isTimeInWorkingSchedule: Créneau ${timeSlot} n'est PAS dans les heures de travail.`);
+      console.log(`  isTimeInWorkingSchedule: Slot ${timeSlot} is NOT within working hours.`);
       return false;
     });
   }
 
   /**
-   * Génère tous les créneaux horaires possibles par tranches de 30 minutes
+   * Generates all possible time slots in 30-minute increments
    */
   private generateHourSlots(): string[] {
     const slots: string[] = [];
@@ -801,7 +813,7 @@ export class RescheduleAppointmentDialogComponent implements OnInit {
   }
 
   /**
-   * Formate une date pour l'affichage dans l'input (DD/MM/YYYY)
+   * Formats a date for input display (DD/MM/YYYY)
    */
   formatDateForInput(date: Date | null): string {
     if (!date) return '';
@@ -812,7 +824,7 @@ export class RescheduleAppointmentDialogComponent implements OnInit {
   }
 
   /**
-   * Formate une date en chaîne longue française
+   * Formats a date to a long French string
    */
   formatDate(date: string): string {
     if (!date) return '';
@@ -821,12 +833,12 @@ export class RescheduleAppointmentDialogComponent implements OnInit {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   }
 
   /**
-   * Formate une date en YYYY-MM-DD pour les appels API
+   * Formats a date to YYYY-MM-DD for API calls
    */
   private formatDateToYYYYMMDD(date: Date): string {
     const year = date.getFullYear();

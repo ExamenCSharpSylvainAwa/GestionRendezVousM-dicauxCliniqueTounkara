@@ -1,4 +1,49 @@
-<div class="prescriptions-container">
-  <h2>Prescriptions</h2>
-  <p>Émettez ou consultez les prescriptions médicales ici.</p>
-</div>
+
+<mat-card>
+  <mat-card-title>Prescriptions</mat-card-title>
+
+  <!-- ✅ Champ de recherche -->
+  <mat-form-field appearance="fill" style="width: 100%;">
+    <mat-label>Rechercher par nom de patient</mat-label>
+    <mat-icon matPrefix class="search-icon">search</mat-icon>
+    <input matInput [(ngModel)]="searchText" (input)="filterPrescriptions()" placeholder="Ex : Sow, Diop, Faye" aria-label="Rechercher une prescription par nom de patient">
+    @if (searchText) {
+      <mat-icon matSuffix class="clear-icon" (click)="clearSearch()">close</mat-icon>
+    }
+   
+  </mat-form-field>
+
+  <mat-card-actions>
+    <button mat-raised-button color="primary" (click)="openCreateDialog()">
+      <mat-icon>add</mat-icon> Ajouter une prescription
+    </button>
+  </mat-card-actions>
+
+  <mat-card-content>
+    @if (isLoading) {
+      <mat-spinner diameter="40" style="margin: 24px auto;"></mat-spinner>
+    } @else if (filteredPrescriptions.length > 0) {
+      <mat-list>
+        @for (prescription of filteredPrescriptions; track prescription.id) {
+          <mat-list-item>
+            <div class="content">
+              <span class="patient">Patient: {{ getPatientName(prescription) }}</span>
+              <span class="date"> - Émise: {{ prescription.date_emission | date:'dd/MM/yyyy' }}</span>
+              <span class="details"> - Description: {{ prescription.description | slice:0:100 }}{{ prescription.description.length > 100 ? '...' : '' }}</span>
+            </div>
+            <div class="actions">
+              <button mat-icon-button color="primary" (click)="openEditDialog(prescription)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="deletePrescription(prescription.id)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </mat-list-item>
+        }
+      </mat-list>
+    } @else {
+      <p>Aucune prescription trouvée.</p>
+    }
+  </mat-card-content>
+</mat-card>

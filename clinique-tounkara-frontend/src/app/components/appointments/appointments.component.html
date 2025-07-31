@@ -1,203 +1,348 @@
-<div class="appointment-page-wrapper">
-  <header class="app-header">
-    <h1 class="app-title">
-      <mat-icon class="header-icon">event_note</mat-icon>
-      Gestion des Rendez-vous Médicaux
-    </h1>
-    <p class="app-subtitle">Planifiez et suivez vos consultations en toute simplicité</p>
+<div class="appointment-page-wrapper" [@pageAnimation]>
+  <!-- Header avec animation -->
+  <header class="app-header" [@fadeInUp]>
+    <div class="header-content">
+      <div class="icon-wrapper">
+        <mat-icon class="header-icon">medical_services</mat-icon>
+      </div>
+      <h1 class="app-title">Gestion des Rendez-vous Médicaux</h1>
+      <p class="app-subtitle">Planifiez et suivez vos consultations en toute simplicité</p>
+    </div>
   </header>
 
   <main class="appointment-content">
-    <mat-card class="appointment-form-card mat-elevation-z8">
-      <mat-card-header class="card-header-styled">
-        <mat-card-title class="card-title-styled">
-          <mat-icon>add_circle_outline</mat-icon>
-          Prendre un Nouveau Rendez-vous
-        </mat-card-title>
+    <!-- Formulaire de création -->
+    <mat-card class="appointment-form-card" [@slideInLeft]>
+      <mat-card-header class="modern-card-header">
+        <div class="header-icon-bg">
+          <mat-icon>add_circle</mat-icon>
+        </div>
+        <mat-card-title>Nouveau Rendez-vous</mat-card-title>
+        <mat-card-subtitle>Créez votre consultation</mat-card-subtitle>
       </mat-card-header>
-      <mat-card-content>
-        <form #appointmentForm="ngForm" (ngSubmit)="onSubmit()" class="appointment-form-grid">
 
-          <mat-form-field appearance="outline" class="form-field-patient">
-            <mat-label>Patient</mat-label>
-            <input matInput [value]="getCurrentUserName()" disabled>
-            <mat-icon matSuffix>person</mat-icon>
-            <input type="hidden" [(ngModel)]="newAppointment.patient_id" name="patient_id" #patientId="ngModel">
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="form-field-doctor">
-            <mat-label>Sélectionnez un médecin</mat-label>
-            <mat-select [(ngModel)]="newAppointment.medecin_id"
-                        name="medecin_id"
-                        required
-                        #medecinId="ngModel"
-                        (selectionChange)="onMedecinChange()">
-              <mat-option *ngFor="let medecin of (medecins$ | async)?.data" [value]="medecin.id">
-                Dr {{ medecin.user?.prenom || 'N/A' }} {{ medecin.user?.nom || 'N/A' }} ({{ medecin.specialite || 'Généraliste' }})
-              </mat-option>
-            </mat-select>
-            <mat-icon matSuffix>local_hospital</mat-icon>
-            <mat-error *ngIf="medecinId.invalid && medecinId.touched">
-              Veuillez sélectionner un médecin.
-            </mat-error>
-          </mat-form-field>
-
-          <mat-form-field *ngIf="selectedMedecinTarif !== null" appearance="outline" class="form-field-tarif">
-            <mat-label>Tarif de consultation</mat-label>
-            <input matInput [value]="selectedMedecinTarif + ' FCFA'" disabled>
-            <mat-icon matSuffix>payments</mat-icon>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="form-field-date">
-            <mat-label>Date du rendez-vous</mat-label>
-            <input matInput
-                   [matDatepicker]="datePicker"
-                   placeholder="Choisissez une date"
-                   [(ngModel)]="newAppointment.date"
-                   name="date"
-                   #dateField="ngModel"
-                   [min]="minDate"
-                   (dateChange)="onDateChange($event)"
-                   required>
-            <mat-datepicker-toggle matSuffix [for]="datePicker"></mat-datepicker-toggle>
-            <mat-datepicker #datePicker></mat-datepicker>
-            <mat-error *ngIf="dateField.invalid && dateField.touched">
-              La date est requise et doit être dans le futur.
-            </mat-error>
-          </mat-form-field>
-
-          <div *ngIf="noServiceMessage || availabilityMessage || isCheckingSchedule" class="availability-status-container">
-            <mat-card *ngIf="noServiceMessage" class="status-message error-message">
-              <mat-card-content>
-                <mat-icon>error</mat-icon>
-                <span>{{ noServiceMessage }}</span>
-              </mat-card-content>
-            </mat-card>
-            <mat-card *ngIf="availabilityMessage" class="status-message"
-                      [ngClass]="{
-                        'status-warning': availabilityMessage.includes('⚠️'),
-                        'status-error': availabilityMessage.includes('❌'),
-                        'status-success': availabilityMessage.includes('✅')
-                      }">
-              <mat-card-content>
-                <mat-icon *ngIf="availabilityMessage.includes('⚠️')">warning</mat-icon>
-                <mat-icon *ngIf="availabilityMessage.includes('❌')">block</mat-icon>
-                <mat-icon *ngIf="availabilityMessage.includes('✅')">check_circle</mat-icon>
-                <span>{{ availabilityMessage }}</span>
-              </mat-card-content>
-            </mat-card>
-            <mat-card *ngIf="isCheckingSchedule" class="status-message loading-message">
-              <mat-card-content>
-                <mat-progress-spinner diameter="24" mode="indeterminate"></mat-progress-spinner>
-                <span>Vérification des créneaux disponibles...</span>
-              </mat-card-content>
-            </mat-card>
+      <mat-card-content class="form-content">
+        <form #appointmentForm="ngForm" (ngSubmit)="onSubmit()" class="modern-form">
+          
+          <!-- Patient (lecture seule) -->
+          <div class="form-group" [@slideInUp]="{ delay: '100ms' }">
+            <mat-form-field appearance="outline" class="modern-field">
+              <mat-label>Patient</mat-label>
+              <input matInput [value]="getCurrentUserName()" disabled>
+              <mat-icon matPrefix>person</mat-icon>
+              <input type="hidden" [(ngModel)]="newAppointment.patient_id" name="patient_id">
+            </mat-form-field>
           </div>
 
-          <mat-form-field *ngIf="availableHours.length > 0 && !isCheckingSchedule" appearance="outline" class="form-field-time">
-            <mat-label>Heure du rendez-vous</mat-label>
-            <mat-select [(ngModel)]="newAppointment.heure"
-                        name="heure"
-                        #heureField="ngModel"
-                        required>
-              <mat-option *ngFor="let hour of availableHours" [value]="hour">
-                {{ hour }}
-              </mat-option>
-            </mat-select>
-            <mat-icon matSuffix>access_time</mat-icon>
-            <mat-error *ngIf="heureField.invalid && heureField.touched">
-              Veuillez sélectionner une heure.
-            </mat-error>
-          </mat-form-field>
+          <!-- Sélection du médecin -->
+          <div class="form-group" [@slideInUp]="{ delay: '200ms' }">
+            <mat-form-field appearance="outline" class="modern-field">
+              <mat-label>Sélectionnez un médecin</mat-label>
+              <mat-select [(ngModel)]="newAppointment.medecin_id"
+                          name="medecin_id"
+                          required
+                          #medecinId="ngModel"
+                          (selectionChange)="onMedecinChange()">
+                <mat-option *ngFor="let medecin of (medecins$ | async)?.data" [value]="medecin.id">
+                  <div class="doctor-option">
+                    <div class="doctor-info">
+                      <span class="doctor-name">Dr {{ medecin.user?.prenom }} {{ medecin.user?.nom }}</span>
+                      <span class="doctor-specialty">{{ medecin.specialite || 'Généraliste' }}</span>
+                    </div>
+                  </div>
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>local_hospital</mat-icon>
+              <mat-error *ngIf="medecinId.invalid && medecinId.touched">
+                Veuillez sélectionner un médecin
+              </mat-error>
+            </mat-form-field>
+          </div>
 
-          <div *ngIf="availableHours.length === 0 && !isCheckingSchedule && newAppointment.medecin_id && newAppointment.date"
-               class="no-slots-message-box">
+          <!-- Tarif (si médecin sélectionné) -->
+          <div class="form-group" [@slideInUp]="{ delay: '300ms' }" *ngIf="selectedMedecinTarif !== null">
+            <mat-form-field appearance="outline" class="modern-field">
+              <mat-label>Tarif de consultation</mat-label>
+              <input matInput [value]="selectedMedecinTarif + ' FCFA'" disabled>
+              <mat-icon matPrefix>payments</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <!-- Date du rendez-vous -->
+          <div class="form-group" [@slideInUp]="{ delay: '400ms' }">
+            <mat-form-field appearance="outline" class="modern-field">
+              <mat-label>Date du rendez-vous</mat-label>
+              <input matInput
+                     [matDatepicker]="datePicker"
+                     placeholder="Choisissez une date"
+                     [(ngModel)]="newAppointment.date"
+                     name="date"
+                     #dateField="ngModel"
+                     [min]="minDate"
+                     (dateChange)="onDateChange($event)"
+                     required>
+              <mat-datepicker-toggle matSuffix [for]="datePicker"></mat-datepicker-toggle>
+              <mat-datepicker #datePicker></mat-datepicker>
+              <mat-icon matPrefix>event</mat-icon>
+              <mat-error *ngIf="dateField.invalid && dateField.touched">
+                La date est requise et doit être dans le futur
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <!-- Messages de statut -->
+          <div class="status-messages" [@fadeInOut] *ngIf="noServiceMessage || availabilityMessage || isCheckingSchedule">
+            <div class="status-card error" *ngIf="noServiceMessage" [@slideInUp]>
+              <mat-icon>error</mat-icon>
+              <span>{{ noServiceMessage }}</span>
+            </div>
+            
+            <div class="status-card" 
+                 [ngClass]="{
+                   'warning': availabilityMessage.includes('⚠️'),
+                   'error': availabilityMessage.includes('❌'),
+                   'success': availabilityMessage.includes('✅')
+                 }"
+                 *ngIf="availabilityMessage" [@slideInUp]>
+              <mat-icon>{{ getStatusIcon(availabilityMessage) }}</mat-icon>
+              <span>{{ availabilityMessage }}</span>
+            </div>
+            
+            <div class="status-card loading" *ngIf="isCheckingSchedule" [@pulse]>
+              <mat-progress-spinner diameter="24" mode="indeterminate"></mat-progress-spinner>
+              <span>Vérification des créneaux disponibles...</span>
+            </div>
+          </div>
+
+          <!-- Heure du rendez-vous -->
+          <div class="form-group" [@slideInUp]="{ delay: '500ms' }" *ngIf="availableHours.length > 0 && !isCheckingSchedule">
+            <mat-form-field appearance="outline" class="modern-field">
+              <mat-label>Heure du rendez-vous</mat-label>
+              <mat-select [(ngModel)]="newAppointment.heure"
+                          name="heure"
+                          #heureField="ngModel"
+                          required>
+                <mat-option *ngFor="let hour of availableHours" [value]="hour">
+                  <div class="time-option">
+                    <mat-icon>schedule</mat-icon>
+                    {{ hour }}
+                  </div>
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>access_time</mat-icon>
+              <mat-error *ngIf="heureField.invalid && heureField.touched">
+                Veuillez sélectionner une heure
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <!-- Message aucun créneau -->
+          <div class="no-slots-message" 
+               *ngIf="availableHours.length === 0 && !isCheckingSchedule && newAppointment.medecin_id && newAppointment.date"
+               [@shakeAnimation]>
             <mat-icon>sentiment_dissatisfied</mat-icon>
-            <span>Désolé, aucun créneau disponible pour cette date. Veuillez choisir une autre date.</span>
+            <span>Aucun créneau disponible pour cette date</span>
+            <small>Veuillez choisir une autre date</small>
           </div>
 
-          <mat-form-field appearance="outline" class="form-field-motif">
-            <mat-label>Motif de la consultation</mat-label>
-            <textarea matInput
-                      placeholder="Ex: Consultation de routine, suivi, etc."
-                      [(ngModel)]="newAppointment.motif"
-                      name="motif"
-                      #motifField="ngModel"
-                      rows="3"
-                      required></textarea>
-            <mat-icon matSuffix>description</mat-icon>
-            <mat-error *ngIf="motifField.invalid && motifField.touched">
-              Le motif est requis.
-            </mat-error>
-          </mat-form-field>
+          <!-- Motif de consultation -->
+          <div class="form-group full-width" [@slideInUp]="{ delay: '600ms' }">
+            <mat-form-field appearance="outline" class="modern-field">
+              <mat-label>Motif de la consultation</mat-label>
+              <textarea matInput
+                        placeholder="Décrivez le motif de votre consultation..."
+                        [(ngModel)]="newAppointment.motif"
+                        name="motif"
+                        #motifField="ngModel"
+                        rows="4"
+                        required></textarea>
+              <mat-icon matPrefix>description</mat-icon>
+              <mat-error *ngIf="motifField.invalid && motifField.touched">
+                Le motif est requis
+              </mat-error>
+            </mat-form-field>
+          </div>
 
-          <div class="form-actions">
+          <!-- Bouton de soumission -->
+          <div class="form-actions" [@slideInUp]="{ delay: '700ms' }">
             <button mat-raised-button
                     color="primary"
                     type="submit"
-                    class="submit-button-large"
-                    [disabled]="!appointmentForm.valid || !isReady || isLoading || availableHours.length === 0">
+                    class="submit-btn"
+                    [disabled]="!appointmentForm.valid || !isReady || isLoading || availableHours.length === 0"
+                    [@buttonScale]>
               <ng-container *ngIf="!isLoading">
-                <mat-icon>calendar_today</mat-icon>
+                <mat-icon>event_available</mat-icon>
                 <span>Confirmer le Rendez-vous</span>
               </ng-container>
               <ng-container *ngIf="isLoading">
-                <mat-progress-spinner diameter="20" mode="indeterminate" color="accent"></mat-progress-spinner>
+                <mat-progress-spinner diameter="20" mode="indeterminate"></mat-progress-spinner>
                 <span>Création en cours...</span>
               </ng-container>
             </button>
           </div>
 
-          <div *ngIf="errorMessage" class="global-message error-message-box">
-            <mat-icon>error_outline</mat-icon>
-            <span>{{ errorMessage }}</span>
+          <!-- Messages globaux -->
+          <div class="global-messages">
+            <div class="message error" *ngIf="errorMessage" [@slideInUp]>
+              <mat-icon>error_outline</mat-icon>
+              <span>{{ errorMessage }}</span>
+            </div>
+            
+            <div class="message success" *ngIf="successMessage" [@slideInUp]>
+              <mat-icon>check_circle_outline</mat-icon>
+              <span>{{ successMessage }}</span>
+            </div>
           </div>
-
-          <div *ngIf="successMessage" class="global-message success-message-box">
-            <mat-icon>check_circle_outline</mat-icon>
-            <span>{{ successMessage }}</span>
-          </div>
-
         </form>
       </mat-card-content>
     </mat-card>
 
-    <mat-card class="appointments-list-card mat-elevation-z8">
-      <mat-card-header class="card-header-styled">
-        <mat-card-title class="card-title-styled">
+    <!-- Liste des rendez-vous -->
+    <mat-card class="appointments-list-card" [@slideInRight]>
+      <mat-card-header class="modern-card-header">
+        <div class="header-icon-bg">
           <mat-icon>list_alt</mat-icon>
-          Mes Rendez-vous Prévus
-        </mat-card-title>
+        </div>
+        <mat-card-title>Mes Rendez-vous</mat-card-title>
+        <mat-card-subtitle>Gérez vos consultations</mat-card-subtitle>
       </mat-card-header>
-      <mat-card-content>
-        <div *ngIf="appointments.length === 0" class="empty-state-section">
-          <mat-icon class="empty-state-icon">calendar_today</mat-icon>
-          <p class="empty-state-text">Vous n'avez aucun rendez-vous programmé pour le moment.</p>
-          <p class="empty-state-subtext">Utilisez le formulaire ci-dessus pour en créer un !</p>
+
+      <mat-card-content class="list-content">
+        <!-- Filtres modernes -->
+        <div class="filters-section" [@slideInDown]>
+          <div class="filter-header">
+            <mat-icon>filter_list</mat-icon>
+            <h3>Filtres</h3>
+          </div>
+          
+          <div class="filters-grid">
+            <!-- Filtre par date -->
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>Filtrer par date</mat-label>
+              <input matInput
+                     [matDatepicker]="filterDatePicker"
+                     [(ngModel)]="selectedFilterDate"
+                     (dateChange)="onFilterDateChange($event)">
+              <mat-datepicker-toggle matPrefix [for]="filterDatePicker"></mat-datepicker-toggle>
+              <mat-datepicker #filterDatePicker></mat-datepicker>
+              <button mat-icon-button matSuffix 
+                      (click)="clearFilterDate()" 
+                      *ngIf="selectedFilterDate"
+                      matTooltip="Effacer le filtre">
+                <mat-icon>clear</mat-icon>
+              </button>
+            </mat-form-field>
+
+            <!-- Filtre par statut -->
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>Filtrer par statut</mat-label>
+              <mat-select [(ngModel)]="selectedStatusFilter" (selectionChange)="onStatusFilterChange()">
+                <mat-option value="">Tous les statuts</mat-option>
+                <mat-option value="en_attente">En attente</mat-option>
+                <mat-option value="confirme">Confirmé</mat-option>
+                <mat-option value="annule">Annulé</mat-option>
+                <mat-option value="termine">Terminé</mat-option>
+              </mat-select>
+              <mat-icon matPrefix>filter_alt</mat-icon>
+            </mat-form-field>
+
+            <!-- Filtre par médecin -->
+            <mat-form-field appearance="outline" class="filter-field">
+              <mat-label>Filtrer par médecin</mat-label>
+              <mat-select [(ngModel)]="selectedDoctorFilter" (selectionChange)="onDoctorFilterChange()">
+                <mat-option value="">Tous les médecins</mat-option>
+                <mat-option *ngFor="let medecin of (medecins$ | async)?.data" [value]="medecin.id">
+                  Dr {{ medecin.user?.prenom }} {{ medecin.user?.nom }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>person</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <!-- Bouton reset filtres -->
+          <button mat-stroked-button 
+                  class="reset-filters-btn" 
+                  (click)="resetAllFilters()"
+                  *ngIf="hasActiveFilters()"
+                  [@fadeInOut]>
+            <mat-icon>refresh</mat-icon>
+            Réinitialiser les filtres
+          </button>
         </div>
 
-        <mat-list *ngIf="appointments.length > 0" class="appointment-list-modern">
-          <div *ngFor="let appointment of appointments; trackBy: trackAppointmentById" class="appointment-item-wrapper">
-            <mat-list-item class="appointment-item-modern">
-              <mat-icon matListIcon class="appointment-icon">event</mat-icon>
-              <div matLine class="appointment-details">
-                <span class="appointment-motif">{{ appointment.motif }}</span>
-                <span class="appointment-doctor">Dr. {{ appointment.medecin?.user?.prenom || 'N/A' }} {{ appointment.medecin?.user?.nom || 'N/A' }}</span>
-                <span class="appointment-status status-{{ appointment.statut }}">{{ getAppointmentStatusLabel(appointment.statut) }}</span>
-              </div>
-              <div matLine class="appointment-datetime">
-                <mat-icon>schedule</mat-icon> {{ formatDateTime(appointment.date_heure) }}
-              </div>
-              <div class="appointment-actions">
-                <button mat-raised-button color="warn" (click)="cancelAppointment(appointment)" matTooltip="Annuler le rendez-vous">
-                  <mat-icon>cancel</mat-icon>
-                  <span>Annuler</span>
-                </button>
-              </div>
-            </mat-list-item>
-            <mat-divider class="item-divider"></mat-divider>
+        <!-- Statistiques rapides -->
+        <div class="stats-section" [@slideInUp] *ngIf="appointmentStats">
+          <div class="stat-card" *ngFor="let stat of appointmentStats" [@staggerAnimation]>
+            <div class="stat-icon" [ngClass]="stat.class">
+              <mat-icon>{{ stat.icon }}</mat-icon>
+            </div>
+            <div class="stat-content">
+              <span class="stat-number">{{ stat.count }}</span>
+              <span class="stat-label">{{ stat.label }}</span>
+            </div>
           </div>
-        </mat-list>
+        </div>
+
+        <!-- État vide -->
+        <div class="empty-state" *ngIf="filteredAppointments.length === 0" [@floatAnimation]>
+          <div class="empty-icon">
+            <mat-icon>calendar_month</mat-icon>
+          </div>
+          <h3>Aucun rendez-vous trouvé</h3>
+          <p>{{ getEmptyStateMessage() }}</p>
+          <button mat-raised-button color="primary" (click)="resetAllFilters()" *ngIf="hasActiveFilters()">
+            Voir tous les rendez-vous
+          </button>
+        </div>
+
+        <!-- Liste des rendez-vous -->
+        <div class="appointments-list" *ngIf="filteredAppointments.length > 0">
+          <div class="appointment-item" 
+               *ngFor="let appointment of filteredAppointments; trackBy: trackAppointmentById; let i = index"
+               [@listItemAnimation]="{ delay: i * 100 + 'ms' }">
+            
+            <div class="appointment-card" [ngClass]="'status-' + appointment.statut">
+              <div class="appointment-header">
+                <div class="appointment-status">
+                  <mat-icon>{{ getStatusIcon(appointment.statut) }}</mat-icon>
+                  <span class="status-text">{{ getAppointmentStatusLabel(appointment.statut) }}</span>
+                </div>
+                <div class="appointment-date">
+                  <mat-icon>schedule</mat-icon>
+                  <span>{{ formatDateTime(appointment.date_heure) }}</span>
+                </div>
+              </div>
+
+              <div class="appointment-body">
+                <div class="appointment-main-info">
+                  <h4 class="appointment-motif">{{ appointment.motif }}</h4>
+                  <div class="appointment-doctor">
+                    <mat-icon>person</mat-icon>
+                    <span>Dr. {{ appointment.medecin.user?.prenom }} {{ appointment.medecin.user?.nom }}</span>
+                    <span class="specialty">({{ appointment.medecin.specialite || 'Généraliste' }})</span>
+                  </div>
+                </div>
+
+                <div class="appointment-actions" *ngIf="appointment.statut !== 'annule' && appointment.statut !== 'termine'">
+                  <button mat-raised-button 
+                          color="warn" 
+                          (click)="cancelAppointment(appointment)"
+                          [disabled]="isLoading"
+                          [@buttonHover]>
+                    <mat-icon>cancel</mat-icon>
+                    Annuler
+                  </button>
+                </div>
+
+                <div class="appointment-status-indicator" *ngIf="appointment.statut === 'annule' || appointment.statut === 'termine'">
+                  <mat-icon>{{ appointment.statut === 'annule' ? 'block' : 'check_circle' }}</mat-icon>
+                  <span>{{ appointment.statut === 'annule' ? 'Annulé' : 'Terminé' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </mat-card-content>
     </mat-card>
   </main>

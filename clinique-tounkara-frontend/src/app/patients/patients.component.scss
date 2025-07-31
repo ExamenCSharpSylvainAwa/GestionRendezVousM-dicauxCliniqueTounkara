@@ -1,176 +1,244 @@
-/* patients.component.scss */
+/* Variables de couleurs modernes */
+$primary-color: #1e40af; // Bleu profond pour les actions principales
+$accent-color: #d97706; // Ambre pour les accents
+$warn-color: #b91c1c; // Rouge vif pour les actions dangereuses
+$text-color: #111827; // Gris foncé pour le texte principal
+$light-text-color: #4b5563; // Gris clair pour le texte secondaire
+$border-color: #d1d5db; // Bordure grise claire
+$background-light: #f3f4f6; // Fond gris très clair
+$background-card: #ffffff; // Fond blanc pur pour les cartes
+$background-hover: #e5e7eb; // Fond pour effet de survol
 
-// Variables pour les couleurs et les ombres
-$primary-color: #007BFF; // Vert doux pour les actions principales
-$accent-color: #FFC107; // Jaune orangé pour les accents
-$warn-color: #F44336; // Rouge pour les actions dangereuses
-$text-color: #333;
-$light-text-color: #666;
-$border-color: #e0e0e0;
-$background-light: #f9f9f9;
-$background-card: #ffffff;
+/* Ombres modernes */
+$shadow-light: 0 1px 2px rgba(0, 0, 0, 0.1);
+$shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+$shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
 
-$shadow-light: 0 2px 4px rgba(0, 0, 0, 0.05);
-$shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.1);
-
-// Mixin pour les arrondis
-@mixin border-radius($radius: 8px) {
+/* Mixin pour les arrondis */
+@mixin border-radius($radius: 0.75rem) {
   border-radius: $radius;
 }
 
-// Styles généraux du conteneur
+/* Conteneur principal */
 .patients-container {
-  padding: 24px;
-  max-width: 1200px;
-  margin: 24px auto;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
   background-color: $background-card;
-  @include border-radius(12px);
+  @include border-radius(0.75rem);
   box-shadow: $shadow-medium;
-  font-family: 'Inter', sans-serif; // Utilisation de la police Inter
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: $text-color;
+  transition: all 0.3s ease;
 
   @media (max-width: 768px) {
-    padding: 16px;
-    margin: 16px;
-    @include border-radius(8px);
+    padding: 1rem;
+    @include border-radius(0.5rem);
   }
 }
 
-// Titre de la page
+/* Titre de la page */
 .patients-title {
-  font-size: 2.2em;
-  color: $primary-color;
+  font-size: 2.25rem;
+  font-weight: 800;
   text-align: center;
-  margin-bottom: 30px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
+  margin-bottom: 2.5rem;
+  background: linear-gradient(to right, $primary-color, $accent-color);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.025em;
 
   @media (max-width: 768px) {
-    font-size: 1.8em;
-    margin-bottom: 20px;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
   }
 }
 
-// Bouton d'ajout de patient
+/* Bouton d'ajout de patient */
 .add-patient-btn {
   position: fixed;
-  bottom: 30px;
-  right: 30px;
-  z-index: 1000;
+  bottom: 2.5rem;
+  right: 2.5rem;
   background-color: $primary-color;
-  color: #fff;
+  color: white;
+  width: 3.5rem;
+  height: 3.5rem;
+  @include border-radius(50%);
   box-shadow: $shadow-medium;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 
   &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: $shadow-hover;
+    transform: translateY(-0.25rem);
+    background-color: darken($primary-color, 10%);
   }
 
   mat-icon {
-    font-size: 28px;
+    font-size: 1.5rem;
   }
 
   @media (max-width: 768px) {
-    bottom: 20px;
-    right: 20px;
-    width: 50px;
-    height: 50px;
-    min-width: 50px;
-    line-height: 50px;
-    font-size: 24px;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: 2.75rem;
+    height: 2.75rem;
+
+    mat-icon {
+      font-size: 1.25rem;
+    }
   }
 }
 
-// Conteneur du tableau (pour le défilement horizontal sur petits écrans)
-.table-container {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch; /* Améliore le défilement sur iOS */
-  @include border-radius(8px);
+/* Conteneur des filtres */
+.filter-container {
+  background-color: $background-light;
+  padding: 1.5rem;
+  @include border-radius(0.5rem);
   box-shadow: $shadow-light;
-  background-color: $background-card;
+  margin-bottom: 1.5rem;
+
+  .mat-mdc-form-field {
+    width: 100%;
+    font-size: 0.875rem;
+
+    .mat-mdc-text-field-wrapper {
+      background-color: $background-card;
+      @include border-radius(0.375rem);
+      border: 1px solid $border-color;
+      transition: border-color 0.3s ease;
+    }
+
+    .mat-mdc-form-field-infix {
+      padding: 0.5rem 0;
+    }
+
+    mat-icon {
+      color: $light-text-color;
+    }
+
+    &:hover .mat-mdc-text-field-wrapper {
+      border-color: $primary-color;
+    }
+  }
+
+  mat-select {
+    .mat-mdc-select-value {
+      color: $text-color;
+    }
+  }
+
+  mat-checkbox {
+    .mat-mdc-checkbox-label {
+      color: $text-color;
+    }
+
+    &.mat-mdc-checkbox-checked .mat-mdc-checkbox-background {
+      background-color: $primary-color;
+    }
+  }
 }
 
-// Styles du tableau Material
+/* Conteneur du tableau */
+.table-container {
+  overflow-x: auto;
+  @include border-radius(0.5rem);
+  box-shadow: $shadow-light;
+  background-color: $background-card;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Styles du tableau */
 .patients-table {
   width: 100%;
-  border-collapse: collapse; // S'assure que les bordures sont jolies
-  min-width: 700px; // Assure que le tableau ne devient pas trop étroit
+  border-collapse: collapse;
+  min-width: 700px;
 
-  // En-têtes de colonne
+  /* En-têtes */
   th.mat-header-cell {
     background-color: $primary-color;
-    color: #fff;
+    color: white;
     font-weight: 600;
-    padding: 16px 20px;
+    padding: 1rem 1.25rem;
     text-align: left;
-    font-size: 0.95em;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     border-bottom: 2px solid darken($primary-color, 10%);
 
     &:first-child {
-      @include border-radius(8px 0 0 0);
+      @include border-radius(0.5rem 0 0 0);
     }
     &:last-child {
-      @include border-radius(0 8px 0 0);
+      @include border-radius(0 0.5rem 0 0);
     }
   }
 
-  // Cellules de données
+  /* Cellules */
   td.mat-cell {
-    padding: 14px 20px;
+    padding: 1rem 1.25rem;
     border-bottom: 1px solid $border-color;
-    font-size: 0.9em;
     color: $light-text-color;
-    vertical-align: middle; // Alignement vertical pour les éléments comme le toggle
+    font-size: 0.875rem;
+    vertical-align: middle;
+    transition: background-color 0.2s ease;
 
     &:last-child {
-      padding-right: 15px; // Espace pour les boutons d'action
+      padding-right: 1rem;
     }
   }
 
-  // Lignes du tableau
+  /* Lignes */
   tr.mat-row {
     transition: background-color 0.2s ease;
 
     &:nth-child(even) {
-      background-color: $background-light; // Bandes alternées pour la lisibilité
+      background-color: $background-light;
     }
 
     &:hover {
-      background-color: #f0f0f0; // Effet au survol
+      background-color: $background-hover;
     }
   }
 
-  // Styles spécifiques pour les colonnes
-  .mat-column-active {
+  /* Colonne Actif */
+  .mat-column-actif {
     text-align: center;
+
     .mat-slide-toggle {
       .mdc-switch__track {
-        background-color: #ccc; // Couleur de la piste désactivée
+        background-color: $border-color;
       }
-      &.mat-checked .mdc-switch__track {
-        background-color: rgba($primary-color, 0.5); // Couleur de la piste activée
+      &.mat-mdc-slide-toggle-checked .mdc-switch__track {
+        background-color: lighten($primary-color, 20%);
       }
-      &.mat-checked .mdc-switch__handle {
-        background-color: $primary-color; // Couleur du bouton activé
+      &.mat-mdc-slide-toggle-checked .mdc-switch__handle {
+        background-color: $primary-color;
       }
     }
   }
 
+  /* Colonne Actions */
   .mat-column-actions {
     text-align: center;
+
     button {
-      margin: 0 4px;
+      margin: 0 0.25rem;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
 
       &:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transform: scale(1.1);
+        box-shadow: $shadow-light;
       }
 
       &.mat-primary {
         color: $primary-color;
       }
+
       &.mat-warn {
         color: $warn-color;
       }
@@ -178,33 +246,32 @@ $shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.1);
   }
 }
 
-// Responsive adjustments for table (optional, but good practice)
+/* Responsive pour petits écrans */
 @media (max-width: 600px) {
   .patients-table {
-    min-width: auto; // Allow table to shrink on very small screens
-    display: block; // Make table rows stack vertically
+    min-width: auto;
+    display: block;
 
-    th.mat-header-cell, td.mat-cell {
-      padding: 10px 12px;
-    }
-
-    // Hide headers on small screens and display as labels
     thead {
       display: none;
     }
 
     tr.mat-row {
+      display: flex;
       flex-direction: column;
-      align-items: flex-start;
-      padding: 10px 0;
+      padding: 1rem;
       border-bottom: 1px solid $border-color;
-      margin-bottom: 10px;
-      @include border-radius(8px);
+      margin-bottom: 1rem;
+      @include border-radius(0.5rem);
       box-shadow: $shadow-light;
       background-color: $background-card;
 
       &:nth-child(even) {
-        background-color: $background-card; // Remove alternating rows for stacked cards
+        background-color: $background-card;
+      }
+
+      &:hover {
+        background-color: $background-hover;
       }
     }
 
@@ -212,30 +279,40 @@ $shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.1);
       display: flex;
       justify-content: space-between;
       width: 100%;
-      padding: 8px 15px;
-      border-bottom: none; // Remove cell borders
+      padding: 0.5rem 0.75rem;
+      border-bottom: none;
 
       &:before {
-        content: attr(data-label); // Use data-label for responsive headers
+        content: attr(data-label);
         font-weight: 600;
-        margin-right: 10px;
         color: $text-color;
+        margin-right: 0.5rem;
       }
     }
+  }
 
-    // Add data-label attributes to HTML for responsive headers
-    // Example: <td mat-cell *matCellDef="let patient" data-label="Prénom">{{ patient.user?.prenom }}</td>
+  .filter-container {
+    padding: 1rem;
+
+    .mat-mdc-form-field {
+      margin-bottom: 0.75rem;
+    }
   }
 }
 
-// Styles pour les messages d'erreur/succès du snackbar (si personnalisés)
+/* Styles pour le snackbar */
 .mat-snack-bar-container {
   &.success-snackbar {
     background-color: $primary-color;
-    color: #fff;
+    color: white;
+    @include border-radius(0.375rem);
+    box-shadow: $shadow-medium;
   }
+
   &.error-snackbar {
     background-color: $warn-color;
-    color: #fff;
+    color: white;
+    @include border-radius(0.375rem);
+    box-shadow: $shadow-medium;
   }
 }

@@ -1,3 +1,4 @@
+
 import { Component, OnInit } from '@angular/core';
 import { ApiService, Consultation, PaginatedResponse, MedicalRecord } from '../services/api.service';
 import { MatCardModule } from '@angular/material/card';
@@ -7,9 +8,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatIconModule } from '@angular/material/icon';
-import { DatePipe } from '@angular/common';
-import { ConsultationDialogComponent } from '../components/consultation-dialog/consultation-dialog.component';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { FormsModule } from '@angular/forms';
+import { ConsultationDialogComponent } from '../components/consultation-dialog/consultation-dialog.component';
+import { DatePipe } from '@angular/common';
 
 @Component({
   selector: 'app-consultations',
@@ -22,15 +26,21 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     MatDialogModule,
     MatSnackBarModule,
     MatIconModule,
-    DatePipe,
-    MatProgressSpinnerModule
-],
+    MatProgressSpinnerModule,
+    MatFormFieldModule,
+    MatInputModule,
+    FormsModule,
+    DatePipe
+  ],
   templateUrl: './consultations.component.html',
-  styleUrls: ['./consultations.component.scss']
+  styleUrls: ['./consultations.component.scss'],
+  providers: [DatePipe]
 })
 export class ConsultationsComponent implements OnInit {
   consultations: Consultation[] = [];
+  filteredConsultations: Consultation[] = [];
   medicalRecords: MedicalRecord[] = [];
+  searchText: string = '';
   isLoading: boolean = false;
 
   constructor(
@@ -49,6 +59,7 @@ export class ConsultationsComponent implements OnInit {
     this.apiService.getConsultations().subscribe({
       next: (response: PaginatedResponse<Consultation>) => {
         this.consultations = response.data;
+        this.filteredConsultations = [...this.consultations]; // Initialiser la liste filtrée
         this.isLoading = false;
         console.log('Consultations loaded:', this.consultations);
       },
@@ -73,6 +84,19 @@ export class ConsultationsComponent implements OnInit {
     });
   }
 
+  filterConsultations() {
+    const search = this.searchText.toLowerCase().trim();
+    this.filteredConsultations = this.consultations.filter(consultation => {
+      const name = this.getPatientName(consultation).toLowerCase();
+      return name.includes(search);
+    });
+  }
+
+  clearSearch() {
+    this.searchText = '';
+    this.filterConsultations();
+  }
+
   getPatientName(consultation: Consultation): string {
     if (consultation.dossier_medical?.patient?.user?.nom && consultation.dossier_medical?.patient?.user?.prenom) {
       return `${consultation.dossier_medical.patient.user.nom} ${consultation.dossier_medical.patient.user.prenom}`;
@@ -85,6 +109,13 @@ export class ConsultationsComponent implements OnInit {
   }
 
   openCreateDialog() {
+    if (!this.medicalRecords.length) {
+      this.loadMedicalRecords();
+      if (!this.medicalRecords.length) {
+        this.snackBar.open('Aucun dossier médical disponible', 'Fermer', { duration: 3000 });
+        return;
+      }
+    }
     const dialogRef = this.dialog.open(ConsultationDialogComponent, {
       width: '600px',
       data: { medicalRecords: this.medicalRecords }
@@ -107,6 +138,13 @@ export class ConsultationsComponent implements OnInit {
   }
 
   openEditDialog(consultation: Consultation) {
+    if (!this.medicalRecords.length) {
+      this.loadMedicalRecords();
+      if (!this.medicalRecords.length) {
+        this.snackBar.open('Aucun dossier médical disponible', 'Fermer', { duration: 3000 });
+        return;
+      }
+    }
     const dialogRef = this.dialog.open(ConsultationDialogComponent, {
       width: '600px',
       data: { medicalRecords: this.medicalRecords, consultation }
@@ -132,6 +170,7 @@ export class ConsultationsComponent implements OnInit {
     this.apiService.deleteConsultation(id).subscribe({
       next: () => {
         this.consultations = this.consultations.filter(consultation => consultation.id !== id);
+        this.filterConsultations(); // Mettre à jour la liste filtrée
         this.snackBar.open('Consultation supprimée avec succès', 'Fermer', { duration: 3000 });
       },
       error: (error) => {

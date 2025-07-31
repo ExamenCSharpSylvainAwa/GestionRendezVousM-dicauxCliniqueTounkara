@@ -13,15 +13,14 @@ import { PrescriptionsComponent } from './prescriptions/prescriptions.component'
 import { PatientsComponent } from './patients/patients.component';
 import { DoctorsComponent } from './doctors/doctors.component';
 import { ManageAppointmentsComponent } from './manage-appointments/manage-appointments.component';
-import { ManageBillingComponent } from './manage-billing/manage-billing.component';
 import { UsersComponent } from './users/users.component';
-import { PermissionsComponent } from './permissions/permissions.component';
 import { ReportsComponent } from './reports/reports.component';
 import { PaymentsComponent } from './payments/payments.component';
 import { ViewScheduleComponent } from './view-schedule/view-schedule.component';
 import { DoctorAppointmentsComponent } from './doctor-appointments/doctor-appointments.component';
 import { ProfileEditComponent } from './profile-edit/profile-edit.component';
 import { ConsultationsComponent } from './consultations/consultations.component';
+import { MedicalRecordsViewComponent } from './medical-records-view/medical-records-view.component';
 
 export const routes: Routes = [
   // Routes publiques (sans authentification)
@@ -47,6 +46,11 @@ export const routes: Routes = [
   { 
     path: 'medical-records', 
     component: MedicalRecordsComponent, 
+    canActivate: [AuthGuard] 
+  },
+  { 
+    path: 'medical-records-view', 
+    component: MedicalRecordsViewComponent, 
     canActivate: [AuthGuard] 
   },
   { 
@@ -89,6 +93,7 @@ export const routes: Routes = [
     component: PrescriptionsComponent, 
     canActivate: [AuthGuard] 
   },
+ 
    { 
     path: 'consultations', 
     component: ConsultationsComponent, 
@@ -109,21 +114,13 @@ export const routes: Routes = [
     component: ManageAppointmentsComponent, 
     canActivate: [AuthGuard] 
   },
-  { 
-    path: 'billing/manage', 
-    component: ManageBillingComponent, 
-    canActivate: [AuthGuard] 
-  },
+  
   { 
     path: 'users', 
     component: UsersComponent, 
     canActivate: [AuthGuard] 
   },
-  { 
-    path: 'permissions', 
-    component: PermissionsComponent, 
-    canActivate: [AuthGuard] 
-  },
+ 
   { 
     path: 'reports', 
     component: ReportsComponent, 

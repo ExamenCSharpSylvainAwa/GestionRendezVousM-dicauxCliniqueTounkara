@@ -3,12 +3,13 @@ import { ApiService } from '../../core/api.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 import { DatePipe, CommonModule } from '@angular/common'; // Ajout de CommonModule pour *ngFor
-import { MatIconModule } from '@angular/material/icon'; // Ajout pour les icônes
+import { MatIconModule } from '@angular/material/icon';
+import { MatFormField, MatLabel } from "@angular/material/form-field"; // Ajout pour les icônes
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [MatCardModule, MatListModule, CommonModule, MatIconModule],
+  imports: [MatCardModule, MatListModule, CommonModule, MatIconModule, MatFormField, MatLabel],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })

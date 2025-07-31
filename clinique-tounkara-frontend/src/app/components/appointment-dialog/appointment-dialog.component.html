@@ -1,83 +1,123 @@
-<h2 mat-dialog-title>{{ isEditMode ? 'Modifier le Rendez-vous' : 'Créer un Nouveau Rendez-vous' }}</h2>
+<div class="dialog-container">
+  <h2 mat-dialog-title class="dialog-title">{{ isEditMode ? 'Modifier le Rendez-vous' : 'Créer un Nouveau Rendez-vous' }}</h2>
 
-<mat-dialog-content class="mat-typography appointment-dialog-content">
-  <form class="appointment-form">
-    <!-- Sélecteur de Patient -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Patient</mat-label>
-      <mat-select [(ngModel)]="selectedPatientId" name="patient" required>
-        <!-- Affiche uniquement le nom et le prénom du patient avec vérification de sécurité -->
-        <mat-option *ngFor="let patient of patients" [value]="patient.id">
-          {{ patient.user?.prenom || 'N/A' }} {{ patient.user?.nom || 'N/A' }}
-        </mat-option>
-      </mat-select>
-      <mat-error *ngIf="!selectedPatientId">Patient est requis</mat-error>
-    </mat-form-field>
+  <mat-dialog-content class="dialog-content">
+    <form class="appointment-form">
+      <!-- Sélecteur de Patient -->
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Patient</mat-label>
+        <mat-select [(ngModel)]="selectedPatientId" name="patient" required>
+          <mat-option value="" disabled>Sélectionner un patient</mat-option>
+          <mat-option *ngFor="let patient of patients" [value]="patient.id">
+            {{ patient.user?.prenom || 'N/A' }} {{ patient.user?.nom || 'N/A' }}
+          </mat-option>
+        </mat-select>
+        <mat-icon matPrefix>person</mat-icon>
+        <mat-error *ngIf="!selectedPatientId">Le patient est requis</mat-error>
+      </mat-form-field>
 
-    <!-- Sélecteur de Médecin -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Médecin</mat-label>
-      <!-- L'événement (selectionChange) est crucial pour mettre à jour le tarif -->
-      <mat-select [(ngModel)]="selectedDoctorId" name="doctor" (selectionChange)="onDoctorSelectionChange()" required>
-        <!-- Affiche Dr. Prénom Nom (Spécialité) avec vérification de sécurité -->
-        <mat-option *ngFor="let doctor of doctors" [value]="doctor.id">
-          Dr. {{ doctor.user?.prenom || 'N/A' }} {{ doctor.user?.nom || 'N/A' }} ({{ doctor.specialite || 'Généraliste' }})
-        </mat-option>
-      </mat-select>
-      <mat-error *ngIf="!selectedDoctorId">Médecin est requis</mat-error>
-    </mat-form-field>
+      <!-- Sélecteur de Médecin -->
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Médecin</mat-label>
+        <mat-select [(ngModel)]="selectedDoctorId" name="doctor" (selectionChange)="onDoctorSelectionChange()" required>
+          <mat-option value="" disabled>Sélectionner un médecin</mat-option>
+          <mat-option *ngFor="let doctor of doctors" [value]="doctor.id">
+            Dr. {{ doctor.user?.prenom || 'N/A' }} {{ doctor.user?.nom || 'N/A' }} ({{ doctor.specialite || 'Généraliste' }})
+          </mat-option>
+        </mat-select>
+        <mat-icon matPrefix>medical_services</mat-icon>
+        <mat-error *ngIf="!selectedDoctorId">Le médecin est requis</mat-error>
+      </mat-form-field>
 
-    <!-- Sélecteur de Date -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Date du Rendez-vous</mat-label>
-      <!-- Ajout de l'événement (dateChange) pour déclencher la récupération des créneaux -->
-      <input matInput [matDatepicker]="picker" [(ngModel)]="newDate" name="newDate" [matDatepickerFilter]="dateFilter" (dateChange)="onDateChange($event)" required>
-      <mat-hint>DD/MM/YYYY</mat-hint>
-      <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-      <mat-datepicker #picker></mat-datepicker>
-      <mat-error *ngIf="!newDate">Date est requise</mat-error>
-    </mat-form-field>
+      <!-- Sélecteur de Date -->
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Date du Rendez-vous</mat-label>
+        <input
+          matInput
+          [matDatepicker]="picker"
+          [(ngModel)]="newDate"
+          name="newDate"
+          [matDatepickerFilter]="dateFilter"
+          (dateChange)="onDateChange($event)"
+          placeholder="jj/mm/aaaa"
+          required
+        />
+        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+        <mat-icon matPrefix>calendar_today</mat-icon>
+        <mat-error *ngIf="!newDate">La date est requise</mat-error>
+      </mat-form-field>
 
-    <!-- Indicateur de chargement des horaires -->
-    <div *ngIf="isCheckingSchedule" class="loading-spinner">
-      <mat-spinner [diameter]="24"></mat-spinner>
-      <span>Vérification des créneaux...</span>
-    </div>
+      <!-- Indicateur de chargement des horaires -->
+      <div *ngIf="isCheckingSchedule" class="loading-spinner">
+        <mat-progress-spinner [diameter]="24" mode="indeterminate"></mat-progress-spinner>
+        <span>Vérification des créneaux disponibles...</span>
+      </div>
 
-    <!-- Sélecteur d'Heure -->
-    <mat-form-field appearance="outline" class="full-width" *ngIf="!isCheckingSchedule">
-      <mat-label>Heure du Rendez-vous</mat-label>
-      <!-- Itère sur les créneaux disponibles -->
-      <mat-select [(ngModel)]="newTime" name="newTime" required [disabled]="availableHours.length === 0">
-        <mat-option *ngFor="let timeSlot of availableHours" [value]="timeSlot">
-          {{ timeSlot }}
-        </mat-option>
-      </mat-select>
-      <mat-error *ngIf="!newTime">Heure est requise</mat-error>
-      <mat-hint *ngIf="noServiceMessage" class="error-message">{{ noServiceMessage }}</mat-hint>
-      <mat-hint *ngIf="availabilityMessage && !noServiceMessage" class="info-message">{{ availabilityMessage }}</mat-hint>
-    </mat-form-field>
+      <!-- Sélecteur d'Heure -->
+      <mat-form-field
+        appearance="outline"
+        class="form-field"
+        *ngIf="!isCheckingSchedule && availableHours.length > 0"
+      >
+        <mat-label>Heure du Rendez-vous</mat-label>
+        <mat-select [(ngModel)]="newTime" name="newTime" required>
+          <mat-option *ngFor="let timeSlot of availableHours" [value]="timeSlot">
+            {{ timeSlot }}
+          </mat-option>
+        </mat-select>
+        <mat-icon matPrefix>access_time</mat-icon>
+        <mat-error *ngIf="!newTime">L’heure est requise</mat-error>
+      </mat-form-field>
 
-    <!-- Champ Motif -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Motif du Rendez-vous</mat-label>
-      <textarea matInput [(ngModel)]="motif" name="motif" rows="3" required></textarea>
-      <mat-error *ngIf="!motif?.trim()">Motif est requis</mat-error>
-    </mat-form-field>
+      <!-- Messages de disponibilité -->
+      <div *ngIf="noServiceMessage || availabilityMessage" class="availability-status-container">
+        <div *ngIf="noServiceMessage" class="status-message error-message">
+          <mat-icon>error</mat-icon>
+          <span>{{ noServiceMessage }}</span>
+        </div>
+        <div *ngIf="availabilityMessage && !noServiceMessage" class="status-message status-success">
+          <mat-icon>check_circle</mat-icon>
+          <span>{{ availabilityMessage }}</span>
+        </div>
+      </div>
 
-    <!-- Champ Tarif (lecture seule, récupéré du médecin) -->
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Tarif de Consultation</mat-label>
-      <!-- Ajout de l'attribut 'readonly' pour bloquer la saisie -->
-      <input matInput type="number" [(ngModel)]="tarif" name="tarif" readonly>
-      <mat-hint>Récupéré du médecin sélectionné</mat-hint>
-    </mat-form-field>
-  </form>
-</mat-dialog-content>
+      <!-- Champ Motif -->
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Motif du Rendez-vous</mat-label>
+        <textarea
+          matInput
+          [(ngModel)]="motif"
+          name="motif"
+          rows="3"
+          placeholder="Décrivez le motif du rendez-vous (ex: consultation générale, suivi)..."
+          required
+        ></textarea>
+        <mat-icon matPrefix>comment</mat-icon>
+        <mat-error *ngIf="!motif?.trim()">Le motif est requis</mat-error>
+      </mat-form-field>
 
-<mat-dialog-actions align="end">
-  <button mat-button (click)="onCancel()">Annuler</button>
-  <button mat-raised-button color="primary" (click)="onConfirm()" [disabled]="isCheckingSchedule || availableHours.length === 0">
-    {{ isEditMode ? 'Modifier' : 'Créer' }}
-  </button>
-</mat-dialog-actions>
+      <!-- Champ Tarif -->
+      <mat-form-field appearance="outline" class="form-field">
+        <mat-label>Tarif de Consultation (franc CFA)</mat-label>
+        <input matInput type="number" [(ngModel)]="tarif" name="tarif" readonly placeholder="Tarif automatique">
+        <mat-icon matPrefix>franc CFA</mat-icon>
+        <mat-hint>Récupéré du médecin sélectionné</mat-hint>
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog-actions">
+    <button mat-stroked-button color="warn" (click)="onCancel()" class="action-button">Annuler</button>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="onConfirm()"
+      [disabled]="!isFormValid() || isCheckingSchedule || isLoading"
+      class="action-button"
+    >
+      <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+      <span *ngIf="!isLoading">{{ isEditMode ? 'Modifier' : 'Créer' }}</span>
+    </button>
+  </mat-dialog-actions>
+</div>

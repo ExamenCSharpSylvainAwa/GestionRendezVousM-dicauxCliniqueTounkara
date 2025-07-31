@@ -5,10 +5,15 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { CommonModule } from '@angular/common';
-import { ApiService, Medecin, User, ApiError, UserFormData } from '../services/api.service'; // Import UserFormData from api.service
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { FormsModule } from '@angular/forms';
+import { ApiService, Medecin, User, ApiError, UserFormData } from '../services/api.service';
 import { ConfirmationDialogComponent } from '../components/confirmation-dialog/confirmation-dialog.component';
-import { UserDialogComponent } from '../user-dialog/user-dialog.component'; // Remove UserFormData import from here
+import { UserDialogComponent } from '../user-dialog/user-dialog.component';
 
 @Component({
   selector: 'app-doctors',
@@ -21,6 +26,11 @@ import { UserDialogComponent } from '../user-dialog/user-dialog.component'; // R
     MatDialogModule,
     MatSlideToggleModule,
     MatSnackBarModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatCheckboxModule,
+    FormsModule,
   ],
   templateUrl: './doctors.component.html',
   styleUrls: ['./doctors.component.scss']
@@ -29,6 +39,10 @@ export class DoctorsComponent implements OnInit {
   displayedColumns: string[] = ['prenom', 'nom', 'email', 'specialite', 'tarif_consultation', 'actif', 'actions'];
   dataSource = new MatTableDataSource<Medecin>([]);
   doctors: Medecin[] = [];
+  filterValue: string = '';
+  specialtyFilter: string = '';
+  activeFilter: boolean = false;
+  specialties: string[] = [];
 
   constructor(
     public dialog: MatDialog,
@@ -48,7 +62,8 @@ export class DoctorsComponent implements OnInit {
         console.log('DoctorsComponent: Médecins chargés depuis l\'API:', response);
         this.doctors = response.data || [];
         this.dataSource.data = this.doctors;
-        console.log('DoctorsComponent: dataSource.data:', this.dataSource.data);
+        this.specialties = [...new Set(this.doctors.map(doctor => doctor.specialite))].sort();
+        this.applyFilter();
       },
       error: (error: ApiError) => {
         console.error('DoctorsComponent: Erreur lors du chargement des médecins:', error);
@@ -95,101 +110,123 @@ export class DoctorsComponent implements OnInit {
           }
         ];
         this.dataSource.data = this.doctors;
+        this.specialties = [...new Set(this.doctors.map(doctor => doctor.specialite))].sort();
+        this.applyFilter();
       }
     });
   }
 
-openCreateDoctorDialog(): void {
-  // Utiliser l'interface UserFormData du service API au lieu de redéfinir
-  const dialogData: UserFormData = {
-    nom: '',
-    prenom: '',
-    email: '',
-    password: '',
-    role: 'medecin',
-    actif: true,
-    telephone: '',
-    // Initialiser les champs médecin au niveau racine pour le formulaire
-    specialite: '',
-    numero_ordre: '',
-    tarif_consultation: 0,
-    // Initialiser l'objet medecin aussi pour éviter les erreurs
-    medecin: {
-      specialite: '',
-      numero_ordre: '',
-      tarif_consultation: 0,
-      horaire_consultation: { lundi: { debut: '09:00', fin: '17:00' } },
-      disponible: true
+  applyFilter(): void {
+    let filteredData = this.doctors;
+
+    if (this.filterValue) {
+      const filterText = this.filterValue.toLowerCase().trim();
+      filteredData = filteredData.filter(doctor =>
+        doctor.user?.prenom?.toLowerCase().includes(filterText) ||
+        doctor.user?.nom?.toLowerCase().includes(filterText) ||
+        doctor.user?.email?.toLowerCase().includes(filterText) ||
+        doctor.specialite?.toLowerCase().includes(filterText)
+      );
     }
-  };
 
-  const dialogRef = this.dialog.open(UserDialogComponent, {
-    width: '500px',
-    data: dialogData,
-  });
+    if (this.specialtyFilter) {
+      filteredData = filteredData.filter(doctor => doctor.specialite === this.specialtyFilter);
+    }
 
-  dialogRef.afterClosed().subscribe((result: UserFormData) => {
-    console.log('DoctorsComponent: Dialogue fermé. Résultat:', result);
-    if (result) {
-      if (!result.prenom || !result.nom || !result.email || !result.password || !result.role) {
-        this.snackBar.open('Tous les champs obligatoires doivent être remplis', 'Fermer', { duration: 3000 });
-        return;
+    if (this.activeFilter) {
+      filteredData = filteredData.filter(doctor => doctor.user?.actif);
+    }
+
+    this.dataSource.data = filteredData;
+  }
+
+  openCreateDoctorDialog(): void {
+    const dialogData: UserFormData = {
+      nom: '',
+      prenom: '',
+      email: '',
+      password: '',
+      role: 'medecin',
+      actif: true,
+      telephone: '',
+      medecin: {
+        specialite: '',
+        numero_ordre: '',
+        tarif_consultation: 0,
+        horaire_consultation: { lundi: { debut: '09:00', fin: '17:00' } },
+        disponible: true
       }
-      
-      // CORRECTION: Vérifier les champs médecin correctement
-      if (result.role === 'medecin' && result.medecin && 
-          (!result.medecin.specialite || !result.medecin.numero_ordre || 
-           result.medecin.tarif_consultation == null || result.medecin.tarif_consultation <= 0)) {
-        this.snackBar.open('Tous les champs spécifiques au médecin sont requis', 'Fermer', { duration: 3000 });
-        return;
-      }
+    };
 
-      const cleanData: UserFormData = {
-        nom: result.nom.trim(),
-        prenom: result.prenom.trim(),
-        email: result.email.trim(),
-        password: result.password?.trim() || '',
-        role: 'medecin',
-        actif: result.actif ?? true,
-        telephone: result.telephone?.trim() || undefined,
-        medecin: result.medecin ? {
-          specialite: result.medecin.specialite?.trim(),
-          numero_ordre: result.medecin.numero_ordre?.trim(),
-          tarif_consultation: Number(result.medecin.tarif_consultation),
-          horaire_consultation: result.medecin.horaire_consultation || { lundi: { debut: '09:00', fin: '17:00' } },
-          disponible: result.medecin.disponible ?? true
-        } : undefined
-      };
+    const dialogRef = this.dialog.open(UserDialogComponent, {
+      width: '500px',
+      data: dialogData,
+    });
 
-      // Remove undefined telephone if not provided
-      if (!cleanData.telephone) {
-        delete cleanData.telephone;
-      }
-
-      console.log('DoctorsComponent: Création du médecin avec données:', cleanData);
-      this.apiService.createUser(cleanData).subscribe({
-        next: (response) => {
-          console.log('DoctorsComponent: Médecin créé avec succès:', response);
-          this.snackBar.open('Médecin créé avec succès', 'Fermer', { duration: 3000 });
-          this.loadDoctors();
-        },
-        error: (error: ApiError) => {
-          console.error('DoctorsComponent: Erreur lors de la création du médecin:', error);
-          let errorMessage = 'Erreur lors de la création du médecin';
-          if (error.type === 'VALIDATION_ERROR') {
-            errorMessage = `Erreur de validation: ${error.message}`;
-            if (error.errors) {
-              errorMessage += ` Détails: ${Object.entries(error.errors).map(([field, messages]) => `${field}: ${messages.join(', ')}`).join('; ')}`;
-            }
-          } else if (error.type === 'HTTP_ERROR') {
-            errorMessage = `Erreur serveur: ${error.message}`;
-          }
-          this.snackBar.open(errorMessage, 'Fermer', { duration: 8000 });
+    dialogRef.afterClosed().subscribe((result: UserFormData) => {
+      console.log('DoctorsComponent: Dialogue fermé. Résultat:', result);
+      if (result) {
+        if (!result.prenom?.trim() || !result.nom?.trim() || !result.email?.trim() || !result.password?.trim()) {
+          this.snackBar.open('Les champs prénom, nom, email et mot de passe sont obligatoires', 'Fermer', { duration: 3000 });
+          return;
         }
-      });
-    }
-  });
-}
+
+        // Vérification des champs spécifiques au médecin
+        if (result.role !== 'medecin' || !result.medecin || 
+            !result.medecin.specialite?.trim() || 
+            !result.medecin.numero_ordre?.trim() || 
+            typeof result.medecin.tarif_consultation !== 'number' || 
+            result.medecin.tarif_consultation <= 0) {
+          this.snackBar.open('La spécialité, le numéro d\'ordre et un tarif de consultation valide sont obligatoires', 'Fermer', { duration: 3000 });
+          return;
+        }
+
+        const cleanData: UserFormData = {
+          nom: result.nom.trim(),
+          prenom: result.prenom.trim(),
+          email: result.email.trim(),
+          password: result.password.trim(),
+          role: 'medecin',
+          actif: result.actif ?? true,
+          telephone: result.telephone?.trim() || undefined,
+          medecin: {
+            specialite: result.medecin.specialite.trim(),
+            numero_ordre: result.medecin.numero_ordre.trim(),
+            tarif_consultation: Number(result.medecin.tarif_consultation),
+            horaire_consultation: result.medecin.horaire_consultation || { lundi: { debut: '09:00', fin: '17:00' } },
+            disponible: result.medecin.disponible ?? true
+          }
+        };
+
+        if (!cleanData.telephone) {
+          delete cleanData.telephone;
+        }
+
+        console.log('DoctorsComponent: Création du médecin avec données:', cleanData);
+        this.apiService.createUser(cleanData).subscribe({
+          next: (response) => {
+            console.log('DoctorsComponent: Médecin créé avec succès:', response);
+            this.snackBar.open('Médecin créé avec succès', 'Fermer', { duration: 3000 });
+            this.loadDoctors();
+          },
+          error: (error: ApiError) => {
+            console.error('DoctorsComponent: Erreur lors de la création du médecin:', error);
+            let errorMessage = 'Erreur lors de la création du médecin';
+            if (error.type === 'VALIDATION_ERROR') {
+              errorMessage = `Erreur de validation: ${error.message}`;
+              if (error.errors) {
+                errorMessage += ` Détails: ${Object.entries(error.errors).map(([field, messages]) => `${field}: ${messages.join(', ')}`).join('; ')}`;
+              }
+            } else if (error.type === 'HTTP_ERROR') {
+              errorMessage = `Erreur serveur: ${error.message}`;
+            }
+            this.snackBar.open(errorMessage, 'Fermer', { duration: 8000 });
+          }
+        });
+      }
+    });
+  }
+
   toggleActive(doctor: Medecin): void {
     const userToToggle = doctor.user;
     if (!userToToggle || !userToToggle.id) {
@@ -207,6 +244,7 @@ openCreateDoctorDialog(): void {
         this.snackBar.open(newActiveState ? 'Médecin activé' : 'Médecin désactivé', 'Fermer', { duration: 2000 });
         userToToggle.actif = newActiveState;
         this.dataSource.data = [...this.dataSource.data];
+        this.applyFilter();
       },
       error: (error: ApiError) => {
         console.error('DoctorsComponent: Erreur lors de la mise à jour du statut:', error);

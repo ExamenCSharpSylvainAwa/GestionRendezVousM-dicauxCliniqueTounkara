@@ -1,65 +1,317 @@
 <div class="appointments-container">
-  <h1>Mes Rendez-vous</h1>
+  <div class="header-section">
+    <h1>Mes Rendez-vous</h1>
+    <div class="stats-overview">
+      <div class="stat-card">
+        <div class="stat-icon">📅</div>
+        <div class="stat-info">
+          <span class="stat-number">{{ getTotalAppointments() }}</span>
+          <span class="stat-label">Total</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-info">
+          <span class="stat-number">{{ getPendingAppointments() }}</span>
+          <span class="stat-label">En attente</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info">
+          <span class="stat-number">{{ getConfirmedAppointments() }}</span>
+          <span class="stat-label">Confirmés</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <div *ngIf="isLoading" class="loading">Chargement...</div>
-  <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
+  <!-- Section de filtrage -->
+  <div class="filters-section">
+    <div class="filters-header">
+      <h3>Filtrer les rendez-vous</h3>
+      <button mat-stroked-button (click)="clearAllFilters()" class="clear-btn">
+        <mat-icon>clear_all</mat-icon>
+        Effacer les filtres
+      </button>
+    </div>
+    
+    <div class="filters-grid">
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Rechercher un patient</mat-label>
+        <input matInput [(ngModel)]="searchPatient" (input)="applyFilters()" placeholder="Nom du patient">
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
 
-  <div *ngIf="!isLoading && !errorMessage" class="appointments-table">
-    <mat-table [dataSource]="appointments" class="mat-elevation-z8">
-      <ng-container matColumnDef="date">
-        <mat-header-cell *matHeaderCellDef>Date</mat-header-cell>
-        <mat-cell *matCellDef="let element">{{ element.date_heure | date:'EEEE, dd MMMM yyyy' }}</mat-cell>
-      </ng-container>
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Statut</mat-label>
+        <mat-select [(value)]="selectedStatus" (selectionChange)="applyFilters()">
+          <mat-option value="">Tous les statuts</mat-option>
+          <mat-option value="en_attente">En attente</mat-option>
+          <mat-option value="confirme">Confirmé</mat-option>
+          <mat-option value="annule">Annulé</mat-option>
+          <mat-option value="termine">Terminé</mat-option>
+        </mat-select>
+      </mat-form-field>
 
-      <ng-container matColumnDef="time">
-        <mat-header-cell *matHeaderCellDef>Heure</mat-header-cell>
-        <mat-cell *matCellDef="let element">{{ element.date_heure | date:'HH:mm' }}</mat-cell>
-      </ng-container>
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Date de début</mat-label>
+        <input matInput [matDatepicker]="startPicker" [(ngModel)]="startDate" (dateChange)="applyFilters()">
+        <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+        <mat-datepicker #startPicker></mat-datepicker>
+      </mat-form-field>
 
-      <ng-container matColumnDef="patient">
-        <mat-header-cell *matHeaderCellDef>Patient</mat-header-cell>
-        <mat-cell *matCellDef="let element">{{ getPatientName(element) }}</mat-cell>
-      </ng-container>
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Date de fin</mat-label>
+        <input matInput [matDatepicker]="endPicker" [(ngModel)]="endDate" (dateChange)="applyFilters()">
+        <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+        <mat-datepicker #endPicker></mat-datepicker>
+      </mat-form-field>
+    </div>
+  </div>
 
-      <ng-container matColumnDef="status">
-        <mat-header-cell *matHeaderCellDef>Statut</mat-header-cell>
-        <mat-cell *matCellDef="let element">{{ getAppointmentStatusLabel(element.statut) }}</mat-cell>
-      </ng-container>
+  <!-- Loading state -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner">
+      <mat-spinner diameter="50"></mat-spinner>
+    </div>
+    <p class="loading-text">Chargement des rendez-vous...</p>
+  </div>
 
-      <!-- Nouvelle colonne Actions -->
-      <ng-container matColumnDef="actions">
-        <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
-        <mat-cell *matCellDef="let element">
-          <div class="action-buttons">
-            <!-- Bouton Confirmer -->
-            <button mat-mini-fab color="primary"
-                    *ngIf="element.statut === 'en_attente'"
-                    (click)="confirmAppointment(element)"
-                    matTooltip="Confirmer le rendez-vous">
-              <mat-icon>check</mat-icon>
-            </button>
+  <!-- Error state -->
+  <div *ngIf="errorMessage && !isLoading" class="error-container">
+    <mat-icon class="error-icon">error_outline</mat-icon>
+    <p class="error-text">{{ errorMessage }}</p>
+    <button mat-raised-button color="primary" (click)="loadAppointments()">
+      <mat-icon>refresh</mat-icon>
+      Réessayer
+    </button>
+  </div>
 
-            <!-- Bouton Reporter -->
-            <button mat-mini-fab color="accent"
-                    *ngIf="element.statut === 'en_attente' || element.statut === 'confirme'"
-                    (click)="rescheduleAppointment(element)"
-                    matTooltip="Reporter le rendez-vous">
-              <mat-icon>event_repeat</mat-icon>
-            </button>
+  <!-- Table des rendez-vous -->
+  <div *ngIf="!isLoading && !errorMessage" class="appointments-section">
+    <div class="results-info">
+      <span class="results-count">
+        {{ filteredAppointments.length }} rendez-vous trouvé(s)
+        <span *ngIf="filteredAppointments.length !== appointments.length">
+          sur {{ appointments.length }}
+        </span>
+      </span>
+    </div>
 
-            <!-- Bouton Annuler (si vous voulez l'inclure aussi pour les médecins) -->
-            <!-- <button mat-mini-fab color="warn"
-                    *ngIf="element.statut !== 'annule' && element.statut !== 'termine'"
-                    (click)="cancelAppointment(element)"
-                    matTooltip="Annuler le rendez-vous">
-              <mat-icon>cancel</mat-icon>
-            </button> -->
-          </div>
-        </mat-cell>
-      </ng-container>
+    <div class="table-container">
+      <mat-table [dataSource]="filteredAppointments" class="appointments-table mat-elevation-z4">
+        
+        <!-- Colonne Date (CORRIGÉE) -->
+        <ng-container matColumnDef="date">
+          <mat-header-cell *matHeaderCellDef class="header-cell">
+            <div class="header-content">
+              <mat-icon>calendar_today</mat-icon>
+              <span>Date</span>
+            </div>
+          </mat-header-cell>
+          <mat-cell *matCellDef="let element" class="data-cell">
+            <div class="date-info">
+              <span class="date-main">{{ formatDateOnlyIntl(element.date_heure) }}</span>
+            </div>
+          </mat-cell>
+        </ng-container>
 
-      <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
-      <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
-    </mat-table>
+        <!-- Colonne Heure (CORRIGÉE) -->
+        <ng-container matColumnDef="time">
+          <mat-header-cell *matHeaderCellDef class="header-cell">
+            <div class="header-content">
+              <mat-icon>access_time</mat-icon>
+              <span>Heure</span>
+            </div>
+          </mat-header-cell>
+          <mat-cell *matCellDef="let element" class="data-cell">
+            <div class="time-badge">
+              {{ formatTimeOnlyIntl(element.date_heure) }}
+            </div>
+            
+            <!-- Debug alternatif si besoin -->
+            <div style="font-size: 25px; color: rgb(0, 0, 0); margin-top: 2px;">
+              {{ formatTimeOnly(element.date_heure) }}
+            </div>
+          </mat-cell>
+        </ng-container>
+
+        <!-- Colonne Patient -->
+        <ng-container matColumnDef="patient">
+          <mat-header-cell *matHeaderCellDef class="header-cell">
+            <div class="header-content">
+              <mat-icon>person</mat-icon>
+              <span>Patient</span>
+            </div>
+          </mat-header-cell>
+          <mat-cell *matCellDef="let element" class="data-cell">
+            <div class="patient-info">
+              <div class="patient-avatar">
+                {{ getPatientInitials(element) }}
+              </div>
+              <span class="patient-name">{{ getPatientName(element) }}</span>
+            </div>
+          </mat-cell>
+        </ng-container>
+
+        <!-- Colonne Statut -->
+        <ng-container matColumnDef="status">
+          <mat-header-cell *matHeaderCellDef class="header-cell">
+            <div class="header-content">
+              <mat-icon>info</mat-icon>
+              <span>Statut</span>
+            </div>
+          </mat-header-cell>
+          <mat-cell *matCellDef="let element" class="data-cell">
+            <div class="status-badge" [ngClass]="'status-' + element.statut">
+              <mat-icon class="status-icon">{{ getStatusIcon(element.statut) }}</mat-icon>
+              <span>{{ getAppointmentStatusLabel(element.statut) }}</span>
+              <!-- Indicateur de paiement -->
+              <mat-icon *ngIf="isAppointmentPaid(element)" 
+                       class="payment-indicator" 
+                       matTooltip="Paiement effectué"
+                       style="color: #4CAF50; margin-left: 8px; font-size: 16px;">
+                payment
+              </mat-icon>
+            </div>
+          </mat-cell>
+        </ng-container>
+
+        <!-- Colonne Actions -->
+        <ng-container matColumnDef="actions">
+          <mat-header-cell *matHeaderCellDef class="header-cell">
+            <div class="header-content">
+              <mat-icon>settings</mat-icon>
+              <span>Actions</span>
+            </div>
+          </mat-header-cell>
+          <mat-cell *matCellDef="let element" class="data-cell">
+            <div class="action-buttons">
+              <!-- Bouton Confirmer -->
+              <button mat-mini-fab color="primary"
+                      *ngIf="element.statut === 'en_attente'"
+                      (click)="confirmAppointment(element)"
+                      matTooltip="Confirmer le rendez-vous"
+                      class="action-btn confirm-btn">
+                <mat-icon>check</mat-icon>
+              </button>
+
+              <!-- Bouton Reporter -->
+              <button mat-mini-fab color="accent"
+                      *ngIf="element.statut === 'en_attente' || element.statut === 'confirme'"
+                      (click)="rescheduleAppointment(element)"
+                      matTooltip="Reporter le rendez-vous"
+                      class="action-btn reschedule-btn">
+                <mat-icon>event_repeat</mat-icon>
+              </button>
+
+              <!-- Bouton Marquer comme terminé (NOUVEAU) -->
+              <button mat-mini-fab color="warn"
+                      *ngIf="canMarkAsCompleted(element)"
+                      (click)="markAppointmentAsCompleted(element)"
+                      matTooltip="Marquer comme consultation terminée"
+                      class="action-btn complete-btn">
+                <mat-icon>task_alt</mat-icon>
+              </button>
+            </div>
+          </mat-cell>
+        </ng-container>
+
+        <mat-header-row *matHeaderRowDef="displayedColumns" class="header-row"></mat-header-row>
+        <mat-row *matRowDef="let row; columns: displayedColumns;" class="data-row"></mat-row>
+      </mat-table>
+    </div>
+
+    <!-- Message si aucun résultat -->
+    <div *ngIf="filteredAppointments.length === 0" class="no-results">
+      <mat-icon class="no-results-icon">event_busy</mat-icon>
+      <h3>Aucun rendez-vous trouvé</h3>
+      <p>Essayez de modifier vos critères de recherche</p>
+      <button mat-raised-button color="primary" (click)="clearAllFilters()">
+        Voir tous les rendez-vous
+      </button>
+    </div>
   </div>
 </div>
+
+<style>
+/* Styles pour les boutons d'action */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.action-btn {
+  width: 36px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+}
+
+.confirm-btn {
+  background-color: #4CAF50 !important;
+}
+
+.reschedule-btn {
+  background-color: #FF9800 !important;
+}
+
+.complete-btn {
+  background-color: #9C27B0 !important;
+  color: white !important;
+}
+
+.complete-btn:hover {
+  background-color: #7B1FA2 !important;
+}
+
+/* Style pour l'indicateur de paiement */
+.payment-indicator {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Amélioration du style des status badges */
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-en_attente {
+  background-color: #FFF3E0;
+  color: #E65100;
+}
+
+.status-confirme {
+  background-color: #E8F5E8;
+  color: #2E7D32;
+}
+
+.status-annule {
+  background-color: #FFEBEE;
+  color: #C62828;
+}
+
+.status-termine {
+  background-color: #F3E5F5;
+  color: #7B1FA2;
+}
+</style>

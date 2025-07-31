@@ -1,16 +1,30 @@
+
 <mat-card>
   <mat-card-title>Consultations</mat-card-title>
+
+  <!-- ✅ Champ de recherche -->
+  <mat-form-field appearance="fill" style="width: 100%;">
+    <mat-label>Rechercher par nom de patient</mat-label>
+    <mat-icon matPrefix class="search-icon">search</mat-icon>
+    <input matInput [(ngModel)]="searchText" (input)="filterConsultations()" placeholder="Ex : Sow, Diop, Faye" aria-label="Rechercher une consultation par nom de patient">
+    @if (searchText) {
+      <mat-icon matSuffix class="clear-icon" (click)="clearSearch()">close</mat-icon>
+    }
+    
+  </mat-form-field>
+
   <mat-card-actions>
     <button mat-raised-button color="primary" (click)="openCreateDialog()">
       <mat-icon>add</mat-icon> Ajouter une consultation
     </button>
   </mat-card-actions>
+
   <mat-card-content>
     @if (isLoading) {
       <mat-spinner diameter="40" style="margin: 24px auto;"></mat-spinner>
-    } @else if (consultations.length > 0) {
+    } @else if (filteredConsultations.length > 0) {
       <mat-list>
-        @for (consultation of consultations; track consultation.id) {
+        @for (consultation of filteredConsultations; track consultation.id) {
           <mat-list-item>
             <div class="content">
               <span class="patient">Patient: {{ getPatientName(consultation) }}</span>

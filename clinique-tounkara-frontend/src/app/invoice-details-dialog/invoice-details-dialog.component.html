@@ -1,0 +1,77 @@
+
+<mat-card class="invoice-details-card">
+  <mat-card-header>
+    <mat-card-title>
+      <mat-icon>receipt_long</mat-icon>
+      Détails de la Facture {{ invoice.numero }}
+    </mat-card-title>
+    <button mat-icon-button class="close-button" (click)="closeDialog()" matTooltip="Fermer">
+      <mat-icon>close</mat-icon>
+    </button>
+  </mat-card-header>
+
+  <mat-card-content>
+    <div class="details-grid">
+      <div class="detail-item">
+        <span class="label">Numéro Facture:</span>
+        <span class="value">{{ invoice.numero }}</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="label">Patient:</span>
+        <span class="value">{{ getPatientName() }}</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="label">Médecin:</span>
+        <span class="value">{{ getMedecinName() }}</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="label">Spécialité:</span>
+        <span class="value">{{ getMedecinSpecialite() }}</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="label">Date d'émission:</span>
+        <span class="value">{{ invoice.date_emission | date:'dd/MM/yyyy' }}</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="label">Montant Total:</span>
+        <span class="value">{{ getFormattedAmount(invoice.montant_total) | number:'1.0-0' }} FCFA</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="label">TVA:</span>
+        <span class="value">{{ invoice.tva | number:'1.0-0' }} %</span>
+      </div>
+
+      <div class="detail-item">
+        <span class="label">Statut:</span>
+        <mat-chip [color]="getStatusColor(invoice.statut)" selected>
+          {{ getStatusLabel(invoice.statut) }}
+        </mat-chip>
+      </div>
+
+      <div class="detail-item" *ngIf="invoice.paiement?.rendez_vous">
+        <span class="label">Motif du rendez-vous:</span>
+        <span class="value">{{ invoice.paiement?.rendez_vous?.motif || 'N/A' }}</span>
+      </div>
+
+      <div class="detail-item" *ngIf="invoice.paiement?.rendez_vous">
+        <span class="label">Date du rendez-vous:</span>
+        <span class="value">{{ invoice.paiement?.rendez_vous?.date_heure | date:'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+
+      <div class="detail-item" *ngIf="invoice.paiement">
+        <span class="label">Montant du paiement:</span>
+        <span class="value">{{ getFormattedAmount(invoice.paiement.montant) | number:'1.0-0' }} FCFA</span>
+      </div>
+    </div>
+  </mat-card-content>
+
+  <mat-card-actions>
+    <button mat-raised-button color="primary" (click)="closeDialog()">Fermer</button>
+  </mat-card-actions>
+</mat-card>

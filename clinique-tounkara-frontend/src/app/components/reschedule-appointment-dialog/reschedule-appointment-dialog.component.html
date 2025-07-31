@@ -1,40 +1,47 @@
-<div class="reschedule-dialog">
-  <h2 mat-dialog-title>Reporter le rendez-vous</h2>
+<div class="dialog-container">
+  <h2 mat-dialog-title class="dialog-title">Reporter le rendez-vous</h2>
 
-  <mat-dialog-content>
+  <mat-dialog-content class="dialog-content">
     <div class="appointment-info">
-      <p><strong>Patient :</strong> {{ data.patientName }}</p>
-      <p><strong>Médecin :</strong> {{ data.doctorName }}</p>
-      <p><strong>Date actuelle :</strong> {{ data.currentDate }}</p>
+      <p><mat-icon>person</mat-icon> <strong>Patient :</strong> {{ data.patientName }}</p>
+      <p><mat-icon>medical_services</mat-icon> <strong>Médecin :</strong> {{ data.doctorName }}</p>
+      <p><mat-icon>calendar_today</mat-icon> <strong>Date actuelle :</strong> {{ data.currentDate }}</p>
     </div>
 
-    <mat-form-field appearance="outline" class="full-width">
+    <mat-form-field appearance="outline" class="form-field">
       <mat-label>Nouvelle date du rendez-vous</mat-label>
-      <input matInput
-             [matDatepicker]="newDatePicker"
-             placeholder="Choisissez une nouvelle date"
-             [(ngModel)]="newDate" 
-             (dateChange)="onDateChange($event)"
-             name="newDate"
-             [min]="minDate"
-             [matDatepickerFilter]="dateFilter"
-             required />
+      <input
+        matInput
+        [matDatepicker]="newDatePicker"
+        placeholder="Choisissez une nouvelle date (jj/mm/aaaa)"
+        [(ngModel)]="newDate"
+        (dateChange)="onDateChange($event)"
+        name="newDate"
+        [min]="minDate"
+        [matDatepickerFilter]="dateFilter"
+        required
+      />
       <mat-datepicker-toggle matSuffix [for]="newDatePicker" (click)="newDatePicker.open()"></mat-datepicker-toggle>
       <mat-datepicker #newDatePicker></mat-datepicker>
+      <mat-icon matPrefix>calendar_today</mat-icon>
+      <mat-error *ngIf="!newDate">Veuillez sélectionner une date</mat-error>
     </mat-form-field>
 
-    <!-- Affichage des messages de disponibilité -->
-    <div *ngIf="noServiceMessage || availabilityMessage || isCheckingSchedule" class="availability-status-container">
+    <!-- Availability Messages -->
+    <div class="availability-status-container" *ngIf="noServiceMessage || availabilityMessage || isCheckingSchedule">
       <div *ngIf="noServiceMessage" class="status-message error-message">
         <mat-icon>error</mat-icon>
         <span>{{ noServiceMessage }}</span>
       </div>
-      <div *ngIf="availabilityMessage" class="status-message"
-           [ngClass]="{
-             'status-warning': availabilityMessage.includes('⚠️'),
-             'status-error': availabilityMessage.includes('❌'),
-             'status-success': availabilityMessage.includes('✅')
-           }">
+      <div
+        *ngIf="availabilityMessage"
+        class="status-message"
+        [ngClass]="{
+          'status-warning': availabilityMessage.includes('⚠️'),
+          'status-error': availabilityMessage.includes('❌'),
+          'status-success': availabilityMessage.includes('✅')
+        }"
+      >
         <mat-icon *ngIf="availabilityMessage.includes('⚠️')">warning</mat-icon>
         <mat-icon *ngIf="availabilityMessage.includes('❌')">block</mat-icon>
         <mat-icon *ngIf="availabilityMessage.includes('✅')">check_circle</mat-icon>
@@ -46,50 +53,60 @@
       </div>
     </div>
 
-    <!-- Sélecteur d'heure, affiché seulement si des heures sont disponibles et pas en chargement -->
-    <mat-form-field *ngIf="availableHours.length > 0 && !isCheckingSchedule" appearance="outline" class="full-width">
+    <!-- Time Selector -->
+    <mat-form-field
+      *ngIf="availableHours.length > 0 && !isCheckingSchedule"
+      appearance="outline"
+      class="form-field"
+    >
       <mat-label>Nouvelle heure du rendez-vous</mat-label>
-      <mat-select [(ngModel)]="newTime"
-                  name="newTime"
-                  required>
+      <mat-select [(ngModel)]="newTime" name="newTime" required>
         <mat-option *ngFor="let hour of availableHours" [value]="hour">
           {{ hour }}
         </mat-option>
       </mat-select>
-      <mat-icon matSuffix>access_time</mat-icon>
+      <mat-icon matPrefix>access_time</mat-icon>
+      <mat-error *ngIf="!newTime">Veuillez sélectionner une heure</mat-error>
     </mat-form-field>
 
-    <!-- Message si aucun créneau n'est disponible pour la date sélectionnée -->
-    <div *ngIf="availableHours.length === 0 && !isCheckingSchedule && newDate"
-         class="no-slots-message-box">
+    <!-- No Slots Message -->
+    <div
+      *ngIf="availableHours.length === 0 && !isCheckingSchedule && newDate"
+      class="no-slots-message-box"
+    >
       <mat-icon>sentiment_dissatisfied</mat-icon>
-      <span>Désolé, aucun créneau disponible pour cette date et heure. Veuillez choisir une autre date.</span>
+      <span>Désolé, aucun créneau disponible pour cette date. Veuillez choisir une autre date.</span>
     </div>
 
-    <mat-form-field appearance="outline" class="full-width">
+    <mat-form-field appearance="outline" class="form-field">
       <mat-label>Motif du report</mat-label>
       <textarea
         matInput
         [(ngModel)]="rescheduleReason"
-        placeholder="Veuillez indiquer la raison du report..."
+        placeholder="Indiquez la raison du report (ex: conflit d'horaire, urgence médicale)..."
         rows="3"
-        required>
-      </textarea>
+        required
+      ></textarea>
+      <mat-icon matPrefix>comment</mat-icon>
+      <mat-error *ngIf="!rescheduleReason.trim()">Veuillez fournir un motif</mat-error>
     </mat-form-field>
 
     <p class="warning-text">
-      ⚠️ Le patient sera informé de ce report.
+      <mat-icon>warning</mat-icon> Le patient sera informé de ce report.
     </p>
   </mat-dialog-content>
 
-  <mat-dialog-actions align="end">
-    <button mat-button (click)="onCancel()">Annuler</button>
+  <mat-dialog-actions class="dialog-actions">
+    <button mat-stroked-button color="warn" (click)="onCancel()" class="action-button">Annuler</button>
     <button
       mat-raised-button
       color="primary"
       (click)="onConfirm()"
-      [disabled]="!newDate || !newTime || !rescheduleReason.trim() || isCheckingSchedule">
-      Confirmer le report
+      [disabled]="!newDate || !newTime || !rescheduleReason.trim() || isCheckingSchedule || isLoading"
+      class="action-button"
+    >
+      <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+      <span *ngIf="!isLoading">Confirmer le report</span>
     </button>
   </mat-dialog-actions>
 </div>

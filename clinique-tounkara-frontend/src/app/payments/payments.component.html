@@ -1,4 +1,207 @@
-<div class="payments-container">
-  <h2>Paiements</h2>
-  <p>Consultez vos paiements ici.</p>
+<div class="appointments-page-container">
+  <h2 class="page-title">Mes Rendez-vous Confirmés</h2>
+
+  <!-- Indicateur de paiements en cours de vérification -->
+  <div *ngIf="pendingPayments.size > 0" class="pending-payments-indicator">
+    <mat-card class="info-card mat-elevation-z2">
+      <mat-card-content>
+        <div class="info-content">
+          <mat-progress-spinner diameter="24" mode="indeterminate"></mat-progress-spinner>
+          <span>{{ pendingPayments.size }} paiement(s) en cours de vérification automatique...</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-state">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Chargement de vos rendez-vous confirmés...</p>
+  </div>
+
+  <div *ngIf="error && !isLoading" class="error-state">
+    <mat-card class="error-card mat-elevation-z2">
+      <mat-card-content>
+        <mat-icon color="warn">error_outline</mat-icon>
+        <p>{{ error }}</p>
+        <button mat-raised-button color="primary" (click)="loadConfirmedAppointments()">
+          <mat-icon>refresh</mat-icon> Réessayer
+        </button>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div *ngIf="!isLoading && !error" class="appointments-grid">
+    <div *ngIf="confirmedAppointments.length === 0" class="no-appointments-state">
+      <mat-card class="mat-elevation-z2">
+        <mat-card-content>
+          <mat-icon>event_available</mat-icon>
+          <p>Vous n'avez aucun rendez-vous confirmé pour le moment.</p>
+          <p class="sub-message">Prenez rendez-vous dès maintenant pour gérer votre santé !</p>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <mat-card *ngFor="let appointment of confirmedAppointments" class="appointment-card mat-elevation-z3">
+      <mat-card-header>
+        <div mat-card-avatar class="doctor-avatar">
+          <mat-icon>person</mat-icon>
+        </div>
+        <mat-card-title class="doctor-name">Dr. {{ appointment.medecin.prenom }} {{ appointment.medecin.nom }}</mat-card-title>
+        <mat-card-subtitle class="doctor-specialty">{{ appointment.medecin.specialite }}</mat-card-subtitle>
+        
+        <!-- Indicateur de traitement du paiement -->
+        <div *ngIf="isPaymentProcessing(appointment.id)" class="processing-indicator">
+          <mat-progress-spinner diameter="20" mode="indeterminate"></mat-progress-spinner>
+        </div>
+      </mat-card-header>
+
+      <mat-card-content class="appointment-details">
+        <div class="detail-item">
+          <mat-icon color="primary">calendar_today</mat-icon>
+          <span>Date et heure :</span>
+          <strong>{{ formatDate(appointment.date_heure) }}</strong>
+        </div>
+
+        <div class="detail-item">
+          <mat-icon>notes</mat-icon>
+          <span>Motif :</span>
+          <span>{{ appointment.motif }}</span>
+        </div>
+
+        <div class="detail-item">
+          <mat-icon color="accent">payments</mat-icon>
+          <span>Tarif :</span>
+          <strong>{{ formatCurrency(appointment.tarif) }}</strong>
+        </div>
+
+        <div *ngIf="hasPayment(appointment)" class="detail-item payment-status-section">
+          <mat-icon>credit_card</mat-icon>
+          <span>Statut du paiement :</span>
+          <span class="payment-badge payment-{{ appointment.paiement!.statut }}">
+            <mat-icon *ngIf="appointment.paiement!.statut === 'paye'" class="status-icon success">check_circle</mat-icon>
+            <mat-icon *ngIf="appointment.paiement!.statut === 'en_attente'" class="status-icon pending">schedule</mat-icon>
+            <mat-icon *ngIf="appointment.paiement!.statut === 'annule'" class="status-icon cancelled">cancel</mat-icon>
+            {{ appointment.paiement!.statut === 'paye' ? 'Payé' : 
+               appointment.paiement!.statut === 'en_attente' ? 'En attente' : 
+               appointment.paiement!.statut === 'annule' ? 'Annulé' : 
+               appointment.paiement!.statut }}
+          </span>
+        </div>
+
+        <div *ngIf="hasPayment(appointment) && appointment.paiement!.reference" class="detail-item">
+          <mat-icon>receipt_long</mat-icon>
+          <span>Référence :</span>
+          <span>{{ appointment.paiement!.reference }}</span>
+        </div>
+
+        <!-- Section spéciale pour les paiements en attente -->
+        <div *ngIf="isPaymentPending(appointment)" class="payment-pending-section">
+          <mat-card class="pending-payment-card">
+            <mat-card-content>
+              <div class="pending-header">
+                <mat-icon color="warn">schedule</mat-icon>
+                <h4>Paiement en attente</h4>
+              </div>
+              <p class="pending-message">
+                Votre paiement est en cours de validation. 
+                La vérification se fait automatiquement, mais vous pouvez aussi vérifier manuellement.
+              </p>
+              
+              <!-- Indicateur de vérification automatique -->
+              <div *ngIf="pendingPayments.has(appointment.id)" class="auto-check-indicator">
+                <mat-progress-spinner diameter="16" mode="indeterminate"></mat-progress-spinner>
+                <span>Vérification automatique en cours...</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+
+        <!-- Section pour les paiements validés sans facture -->
+        <div *ngIf="isPaymentCompleted(appointment) && !hasInvoice(appointment)" class="payment-completed-no-invoice">
+          <mat-card class="warning-card">
+            <mat-card-content>
+              <div class="warning-header">
+                <mat-icon color="warn">warning</mat-icon>
+                <h4>Paiement validé - Facture en cours de génération</h4>
+              </div>
+              <p>Votre paiement a été validé mais la facture n'est pas encore disponible. Veuillez patienter quelques instants.</p>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-card-content>
+
+      <mat-card-actions class="card-actions">
+        <!-- Bouton de paiement initial -->
+        <button *ngIf="!hasPayment(appointment)"
+                mat-flat-button
+                color="primary"
+                (click)="initiatePayment(appointment.id)"
+                [disabled]="isPaymentProcessing(appointment.id) || isLoading">
+          <mat-spinner *ngIf="isPaymentProcessing(appointment.id)" diameter="20"></mat-spinner>
+          <mat-icon *ngIf="!isPaymentProcessing(appointment.id)">account_balance_wallet</mat-icon>
+          {{ isPaymentProcessing(appointment.id) ? 'Traitement...' : 'Procéder au paiement' }}
+        </button>
+
+        <!-- Actions pour les paiements en attente -->
+        <ng-container *ngIf="isPaymentPending(appointment)">
+          <button mat-stroked-button
+                  color="primary"
+                  (click)="checkPaymentStatus(appointment.id)"
+                  [disabled]="isPaymentProcessing(appointment.id) || isLoading">
+            <mat-icon>refresh</mat-icon>
+            Vérifier maintenant
+          </button>
+
+          <button mat-flat-button
+                  color="warn"
+                  (click)="cancelPayment(appointment.paiement!.id)"
+                  [disabled]="isPaymentProcessing(appointment.id) || isLoading">
+            <mat-icon>cancel</mat-icon>
+            Annuler le paiement
+          </button>
+        </ng-container>
+
+        <!-- Bouton de téléchargement de facture -->
+        <button *ngIf="hasInvoice(appointment)"
+                mat-flat-button
+                color="accent"
+                (click)="downloadFacture(appointment.paiement!.facture!.id, appointment.paiement!.facture!.numero)"
+                [disabled]="isLoading">
+          <mat-icon>download</mat-icon>
+          Télécharger la facture
+        </button>
+
+        <!-- Message de paiement effectué avec facture -->
+        <div *ngIf="isPaymentCompleted(appointment) && hasInvoice(appointment)"
+             class="payment-success-message">
+          <mat-icon class="success-icon">check_circle</mat-icon>
+          <span class="status-text">Paiement Effectué - Facture disponible</span>
+        </div>
+
+        <!-- Message de paiement effectué sans facture -->
+        <div *ngIf="isPaymentCompleted(appointment) && !hasInvoice(appointment)"
+             class="payment-completed-message">
+          <mat-icon class="success-icon">check_circle</mat-icon>
+          <span class="status-text">Paiement Effectué</span>
+          <button mat-stroked-button
+                  color="primary"
+                  (click)="checkPaymentStatus(appointment.id)"
+                  [disabled]="isLoading">
+            <mat-icon>refresh</mat-icon>
+            Actualiser
+          </button>
+        </div>
+      </mat-card-actions>
+
+      <!-- Informations de débogage (à supprimer en production) -->
+      <mat-card-footer *ngIf="appointment.paiement" class="debug-info">
+        <small>
+          Debug: Paiement ID: {{ appointment.paiement.id }} | 
+          Statut: {{ appointment.paiement.statut }} | 
+          Token: {{ appointment.paiement.paydunya_token }} |
+          Facture: {{ hasInvoice(appointment) ? 'Oui' : 'Non' }}
+        </small>
+      </mat-card-footer>
+    </mat-card>
+  </div>
 </div>

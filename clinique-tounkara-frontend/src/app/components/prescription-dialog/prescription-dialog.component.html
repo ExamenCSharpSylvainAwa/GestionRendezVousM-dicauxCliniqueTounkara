@@ -1,0 +1,104 @@
+<div class="dialog-container">
+  <h2 mat-dialog-title class="dialog-title">
+    {{ data.prescription ? 'Modifier la prescription' : 'Créer une prescription' }}
+  </h2>
+  <mat-dialog-content class="dialog-content">
+    <!-- Consultation -->
+    <mat-form-field appearance="outline" class="form-field">
+      <mat-label>Consultation</mat-label>
+      <mat-select [(ngModel)]="prescription.consultation_id" required>
+        <mat-option value="" disabled>Sélectionner une consultation</mat-option>
+        @for (consultation of data.consultations; track consultation.id) {
+          @if (consultation.dossier_medical && consultation.dossier_medical.patient && consultation.dossier_medical.patient.user && consultation.dossier_medical.patient.user.nom && consultation.dossier_medical.patient.user.prenom) {
+            <mat-option [value]="consultation.id">
+              {{ consultation.dossier_medical.patient.user.nom }} {{ consultation.dossier_medical.patient.user.prenom }} - {{ consultation.date | date:'dd/MM/yyyy' }}
+            </mat-option>
+          }
+        }
+      </mat-select>
+      <mat-icon matPrefix>assignment</mat-icon>
+      <mat-error *ngIf="!prescription.consultation_id">La consultation est requise</mat-error>
+    </mat-form-field>
+
+    <!-- Date d'émission -->
+    <mat-form-field appearance="outline" class="form-field">
+      <mat-label>Date d'émission</mat-label>
+      <input matInput [matDatepicker]="emissionPicker" [(ngModel)]="prescription.date_emission" required>
+      <mat-datepicker-toggle matSuffix [for]="emissionPicker"></mat-datepicker-toggle>
+      <mat-datepicker #emissionPicker></mat-datepicker>
+      <mat-icon matPrefix>calendar_today</mat-icon>
+      <mat-error *ngIf="!prescription.date_emission">La date d'émission est requise</mat-error>
+    </mat-form-field>
+
+    <!-- Date d'expiration -->
+    <mat-form-field appearance="outline" class="form-field">
+      <mat-label>Date d'expiration</mat-label>
+      <input matInput [matDatepicker]="expirationPicker" [(ngModel)]="prescription.date_expiration" required>
+      <mat-datepicker-toggle matSuffix [for]="expirationPicker"></mat-datepicker-toggle>
+      <mat-datepicker #expirationPicker></mat-datepicker>
+      <mat-icon matPrefix>event_busy</mat-icon>
+      <mat-error *ngIf="!prescription.date_expiration">La date d'expiration est requise</mat-error>
+    </mat-form-field>
+
+    <!-- Description -->
+    <mat-form-field appearance="outline" class="form-field">
+      <mat-label>Description</mat-label>
+      <textarea matInput [(ngModel)]="prescription.description" required rows="4" placeholder="Décrivez la prescription..."></textarea>
+      <mat-icon matPrefix>description</mat-icon>
+      <mat-error *ngIf="!prescription.description">La description est requise</mat-error>
+    </mat-form-field>
+
+    <!-- Médicaments Section -->
+    <div class="medicaments-section">
+      <h3 class="section-title">Médicaments</h3>
+      <div class="medicament-form">
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Nom du médicament</mat-label>
+          <input matInput [(ngModel)]="newMedicament.nom" placeholder="Ex: Paracétamol">
+          <mat-icon matPrefix>medication</mat-icon>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Posologie</mat-label>
+          <input matInput [(ngModel)]="newMedicament.posologie" placeholder="Ex: 500 mg toutes les 6 heures">
+          <mat-icon matPrefix>local_pharmacy</mat-icon>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Durée</mat-label>
+          <input matInput [(ngModel)]="newMedicament.duree" placeholder="Ex: 5 jours">
+          <mat-icon matPrefix>schedule</mat-icon>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="form-field">
+          <mat-label>Instructions</mat-label>
+          <input matInput [(ngModel)]="newMedicament.instructions" placeholder="Ex: À prendre avec un repas">
+          <mat-icon matPrefix>info</mat-icon>
+        </mat-form-field>
+        <button mat-icon-button color="primary" (click)="addMedicament()" [disabled]="!isMedicamentValid()" class="add-medicament-btn">
+          <mat-icon>add_circle</mat-icon>
+        </button>
+      </div>
+      @if (prescription.medicaments?.length) {
+        <mat-list class="medicament-list">
+          @for (medicament of prescription.medicaments; track $index) {
+            <mat-list-item class="medicament-item">
+              <span>{{ medicament.nom }} - {{ medicament.posologie }} - {{ medicament.duree }} {{ medicament.instructions ? '(' + medicament.instructions + ')' : '' }}</span>
+              <button mat-icon-button color="warn" (click)="removeMedicament($index)" class="remove-medicament-btn">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </mat-list-item>
+          }
+        </mat-list>
+      } @else {
+        <p class="no-medicaments">Aucun médicament ajouté.</p>
+      }
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog-actions">
+    <button mat-stroked-button color="warn" (click)="onCancel()" class="action-button">Annuler</button>
+    <button mat-raised-button color="primary" (click)="onSubmit()" 
+            [disabled]="!isFormValid() || isLoading" class="action-button">
+      <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+      <span *ngIf="!isLoading">{{ data.prescription ? 'Mettre à jour' : 'Enregistrer' }}</span>
+    </button>
+  </mat-dialog-actions>
+</div>

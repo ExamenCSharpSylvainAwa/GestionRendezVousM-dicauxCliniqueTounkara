@@ -1,12 +1,29 @@
+
 <mat-card>
   <mat-card-title>Dossiers Médicaux</mat-card-title>
-  <mat-card-actions>
-    <button mat-raised-button color="primary" (click)="openCreateDialog()">Ajouter un dossier médical</button>
-  </mat-card-actions>
+
   <mat-card-content>
-    @if (records.length > 0) {
+    <!-- ✅ Champ de recherche amélioré -->
+    <mat-form-field appearance="fill" style="width: 100%;">
+      <mat-label>Rechercher par nom de patient</mat-label>
+      <mat-icon matPrefix class="search-icon">search</mat-icon>
+      <input matInput [(ngModel)]="searchText" (input)="filterRecords()" placeholder="Ex : Sow, Diop, Faye" aria-label="Rechercher un dossier médical par nom de patient">
+      @if (searchText) {
+        <mat-icon matSuffix class="clear-icon" (click)="clearSearch()">close</mat-icon>
+      }
+      <mat-hint>Entrez un nom pour filtrer les dossiers</mat-hint>
+    </mat-form-field>
+
+    <mat-card-actions>
+      <button mat-raised-button color="primary" (click)="openCreateDialog()">
+        Ajouter un dossier médical
+      </button>
+    </mat-card-actions>
+
+    <!-- ✅ Affichage des résultats filtrés -->
+    @if (filteredRecords.length > 0) {
       <mat-list>
-        @for (record of records; track record.id) {
+        @for (record of filteredRecords; track record.id) {
           <mat-list-item>
             <span>Patient: {{ getPatientName(record) }}</span>
             <span> - Date: {{ record.date_creation | date:'dd/MM/yyyy' }}</span>

@@ -1,12 +1,47 @@
 <div class="appointments-container">
   <h1 class="appointments-title">Gestion des Rendez-vous</h1>
+  
+  <!-- Section de filtrage -->
+  <div class="filter-container">
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Filtrer par statut</mat-label>
+      <mat-select [(ngModel)]="selectedStatus" (selectionChange)="applyFilters()">
+        <mat-option value="">Tous</mat-option>
+        <mat-option value="en_attente">En attente</mat-option>
+        <mat-option value="confirme">Confirmé</mat-option>
+        <mat-option value="annule">Annulé</mat-option>
+        <mat-option value="termine">Terminé</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Filtrer par patient</mat-label>
+      <input matInput [(ngModel)]="patientFilter" (input)="applyFilters()" placeholder="Nom du patient">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Filtrer par médecin</mat-label>
+      <input matInput [(ngModel)]="doctorFilter" (input)="applyFilters()" placeholder="Nom du médecin">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Filtrer par date</mat-label>
+      <input matInput [matDatepicker]="picker" [(ngModel)]="dateFilter" (dateChange)="applyFilters()">
+      <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+      <mat-datepicker #picker></mat-datepicker>
+    </mat-form-field>
+
+    <button mat-raised-button color="accent" class="clear-filter-btn" (click)="clearFilters()">
+      Réinitialiser
+    </button>
+  </div>
+
   <button mat-fab color="primary" class="add-appointment-btn" (click)="openCreateAppointmentDialog()">
     <mat-icon>add</mat-icon>
   </button>
 
   <div class="table-container">
     <table mat-table [dataSource]="dataSource" class="appointments-table">
-
       <!-- Colonne Motif -->
       <ng-container matColumnDef="motif">
         <th mat-header-cell *matHeaderCellDef>Motif</th>
@@ -51,9 +86,6 @@
       <ng-container matColumnDef="actions">
         <th mat-header-cell *matHeaderCellDef>Actions</th>
         <td mat-cell *matCellDef="let appointment" data-label="Actions">
-          
-      
-          <!-- Bouton Confirmer visible uniquement si l'utilisateur est un médecin et que le statut est 'en_attente' -->
           <button mat-icon-button color="accent" (click)="confirmAppointment(appointment)" title="Confirmer"
             *ngIf="appointment.statut === 'en_attente' && currentUserRole === 'medecin'">
             <mat-icon>check_circle</mat-icon>
@@ -66,7 +98,6 @@
             [disabled]="appointment.statut === 'annule' || appointment.statut === 'termine'">
             <mat-icon>event_note</mat-icon>
           </button>
-          <!-- Le bouton de suppression a été retiré comme demandé -->
         </td>
       </ng-container>
 

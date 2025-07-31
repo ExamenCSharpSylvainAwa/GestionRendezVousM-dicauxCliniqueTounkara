@@ -1,3 +1,4 @@
+
 /* Custom color palette */
 $primary-color: #3f51b5; /* Indigo */
 $primary-dark: #303f9f; /* Darker indigo */
@@ -9,6 +10,32 @@ $text-primary: #212121; /* Dark text */
 $text-secondary: #757575; /* Secondary text */
 $background-light: #f5f5f5; /* Light background */
 $white: #ffffff;
+$accent-color: #00bcd4; /* Cyan for focus effects */
+
+/* Animation pour l'icône de réinitialisation */
+@keyframes fadeInIcon {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation pour le focus du champ */
+@keyframes glowBorder {
+  0% {
+    box-shadow: 0 0 0 0 rgba($accent-color, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 8px 2px rgba($accent-color, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba($accent-color, 0);
+  }
+}
 
 /* Styles for the card */
 mat-card {
@@ -25,6 +52,108 @@ mat-card {
     font-weight: 500;
     color: $primary-color;
     margin-bottom: 16px;
+  }
+
+  /* Search field */
+  mat-form-field {
+    width: 100%;
+    background: $primary-light;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    margin-bottom: 16px;
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .mat-form-field-wrapper {
+      padding: 0;
+    }
+
+    .mat-form-field-flex {
+      padding: 0 16px;
+      align-items: center;
+      background: transparent;
+      border-radius: 8px;
+      border: 1px solid $primary-color;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+
+      &:focus-within {
+        border-color: $accent-color;
+        animation: glowBorder 1.2s ease-out infinite;
+      }
+    }
+
+    .mat-form-field-underline {
+      display: none;
+    }
+
+    .mat-form-field-label {
+      color: $text-primary;
+      font-weight: 600;
+      font-size: 15px;
+      top: 1.4em;
+      transition: all 0.2s ease;
+
+      &.mat-focused {
+        color: $accent-color;
+        font-size: 13px;
+        top: 1.1em;
+      }
+    }
+
+    input.mat-input-element {
+      padding: 14px 0 10px;
+      font-size: 18px;
+      font-weight: 500;
+      color: $text-primary;
+      caret-color: $accent-color;
+      background: transparent;
+
+      &::placeholder {
+        color: $text-secondary;
+        opacity: 0.7;
+        font-weight: 400;
+      }
+    }
+
+    mat-icon.mat-icon {
+      color: $primary-color;
+      transition: color 0.3s ease, transform 0.2s ease;
+      font-size: 26px;
+      width: 26px;
+      height: 26px;
+      margin-right: 12px;
+
+      &.search-icon {
+        opacity: 0.9;
+
+        &:hover {
+          color: $accent-color;
+          transform: scale(1.05);
+        }
+      }
+
+      &.clear-icon {
+        cursor: pointer;
+        animation: fadeInIcon 0.3s ease forwards;
+        margin-left: 12px;
+
+        &:hover {
+          color: $warn-dark;
+          transform: scale(1.05);
+        }
+      }
+    }
+
+    mat-hint {
+      color: $text-secondary;
+      font-size: 13px;
+      font-weight: 400;
+      padding: 6px 16px;
+      opacity: 0.9;
+    }
   }
 
   /* Card actions (Add button) */
@@ -73,7 +202,7 @@ mat-card {
         border-radius: 4px;
         background-color: $white;
         transition: box-shadow 0.3s ease;
-        min-height: 72px; /* Ensure enough height for content */
+        min-height: 72px;
 
         &:hover {
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -83,9 +212,9 @@ mat-card {
         .content {
           display: flex;
           flex-direction: row;
-          flex-wrap: wrap; /* Allow wrapping for long content */
-          flex: 1; /* Take available space */
-          gap: 16px; /* Space between spans */
+          flex-wrap: wrap;
+          flex: 1;
+          gap: 16px;
           align-items: center;
 
           span {
@@ -94,22 +223,22 @@ mat-card {
 
             &.patient {
               font-weight: 500;
-              min-width: 150px; /* Ensure patient name has enough space */
+              min-width: 150px;
             }
 
             &.date {
               color: $text-secondary;
               font-style: italic;
-              min-width: 120px; /* Ensure date has space */
+              min-width: 120px;
             }
 
             &.details {
               color: $text-secondary;
-              flex: 1; /* Take remaining space */
-              min-width: 200px; /* Prevent collapse */
+              flex: 1;
+              min-width: 200px;
               overflow: hidden;
               text-overflow: ellipsis;
-              white-space: nowrap; /* Prevent line breaks */
+              white-space: nowrap;
             }
           }
         }
@@ -167,22 +296,49 @@ mat-card {
     font-size: 20px;
   }
 
+  mat-form-field {
+    .mat-form-field-flex {
+      padding: 0 12px;
+    }
+
+    input.mat-input-element {
+      padding: 12px 0;
+      font-size: 16px;
+    }
+
+    mat-icon.mat-icon {
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+      margin-right: 10px;
+
+      &.clear-icon {
+        margin-left: 10px;
+      }
+    }
+
+    mat-hint {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+  }
+
   mat-list-item {
     flex-direction: column;
     align-items: flex-start;
     padding: 12px;
-    min-height: auto; /* Allow natural height on mobile */
+    min-height: auto;
 
     .content {
-      flex-direction: column; /* Stack vertically on small screens */
+      flex-direction: column;
       gap: 8px;
 
       span {
         margin-bottom: 8px;
-        min-width: 100%; /* Full width on mobile */
+        min-width: 100%;
 
         &.details {
-          white-space: normal; /* Allow wrapping for symptoms */
+          white-space: normal;
           overflow: visible;
           text-overflow: clip;
         }

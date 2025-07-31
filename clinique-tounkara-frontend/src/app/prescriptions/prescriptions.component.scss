@@ -1,0 +1,343 @@
+
+/* Custom color palette */
+$primary-color: #3f51b5;
+$primary-dark: #303f9f;
+$primary-light: #e8eaf6;
+$warn-color: #f44336;
+$warn-dark: #d32f2f;
+$warn-light: #ffebee;
+$text-primary: #212121;
+$text-secondary: #757575;
+$background-light: #f5f5f5;
+$white: #ffffff;
+$accent-color: #00bcd4;
+
+/* Animation pour l'icône de réinitialisation */
+@keyframes fadeInIcon {
+  from {
+    opacity: 0;
+    transform: scale(0.8) rotate(45deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Animation pour le focus du champ */
+@keyframes pulseBorder {
+  0% {
+    box-shadow: 0 0 0 0 rgba($accent-color, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba($accent-color, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba($accent-color, 0);
+  }
+}
+
+mat-card {
+  max-width: 800px;
+  margin: 24px auto;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background-color: $background-light;
+
+  mat-card-title {
+    font-size: 24px;
+    font-weight: 500;
+    color: $primary-color;
+    margin-bottom: 16px;
+  }
+
+  mat-form-field {
+    width: 100%;
+    background: rgba($white, 0.95);
+    border-radius: 12px;
+    backdrop-filter: blur(8px); /* Effet glassmorphism */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-bottom: 16px;
+
+    &:hover {
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .mat-form-field-wrapper {
+      padding: 0;
+    }
+
+    .mat-form-field-flex {
+      padding: 0 20px;
+      align-items: center;
+      background: transparent;
+      border-radius: 12px;
+      border: 1px solid rgba($text-secondary, 0.3);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+
+      &:focus-within {
+        border-color: $accent-color;
+        animation: pulseBorder 1.5s ease-out infinite;
+      }
+    }
+
+    .mat-form-field-underline {
+      display: none;
+    }
+
+    .mat-form-field-label {
+      color: $text-secondary;
+      font-weight: 500;
+      font-size: 14px;
+      top: 1.5em;
+      transition: all 0.2s ease;
+
+      &.mat-focused {
+        color: $accent-color;
+        font-size: 12px;
+        top: 1.2em;
+      }
+    }
+
+    input.mat-input-element {
+      padding: 16px 0 12px;
+      font-size: 17px;
+      color: $text-primary;
+      caret-color: $accent-color;
+      background: transparent;
+
+      &::placeholder {
+        color: $text-secondary;
+        opacity: 0.6;
+        font-style: italic;
+      }
+    }
+
+    mat-icon.mat-icon {
+      color: $text-secondary;
+      transition: color 0.3s ease, transform 0.2s ease;
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+      margin-right: 16px;
+
+      &.search-icon {
+        opacity: 0.8;
+
+        &:hover {
+          color: $primary-color;
+          transform: scale(1.1);
+        }
+      }
+
+      &.clear-icon {
+        cursor: pointer;
+        animation: fadeInIcon 0.4s ease forwards;
+        margin-left: 16px;
+
+        &:hover {
+          color: $warn-dark;
+          transform: scale(1.1);
+        }
+      }
+    }
+
+    mat-hint {
+      color: $text-secondary;
+      font-size: 12px;
+      padding: 8px 20px;
+      opacity: 0.8;
+    }
+  }
+
+  mat-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+
+    button {
+      padding: 8px 16px;
+      border-radius: 4px;
+      background-color: $primary-color;
+      color: $white;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+
+      mat-icon {
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+
+      &:hover {
+        background-color: $primary-dark;
+        transform: translateY(-2px);
+      }
+    }
+  }
+
+  mat-card-content {
+    mat-spinner {
+      display: block;
+      margin: 24px auto;
+    }
+
+    mat-list {
+      padding: 0;
+
+      mat-list-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px;
+        margin-bottom: 8px;
+        border-radius: 4px;
+        background-color: $white;
+        transition: box-shadow 0.3s ease;
+        min-height: 72px;
+
+        &:hover {
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .content {
+          display: flex;
+          flex-direction: row;
+          flex-wrap: wrap;
+          flex: 1;
+          gap: 16px;
+          align-items: center;
+
+          span {
+            font-size: 16px;
+            color: $text-primary;
+
+            &.patient {
+              font-weight: 500;
+              min-width: 150px;
+            }
+
+            &.date {
+              color: $text-secondary;
+              font-style: italic;
+              min-width: 120px;
+            }
+
+            &.details {
+              color: $text-secondary;
+              flex: 1;
+              min-width: 200px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            }
+          }
+        }
+
+        .actions {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+
+          mat-icon-button {
+            color: $primary-color;
+
+            &.warn {
+              color: $warn-color;
+            }
+
+            &:hover {
+              background-color: $primary-light;
+
+              &.warn {
+                color: $warn-dark;
+                background-color: $warn-light;
+              }
+            }
+
+            mat-icon {
+              font-size: 20px;
+            }
+          }
+        }
+      }
+    }
+
+    p {
+      text-align: center;
+      font-size: 16px;
+      color: $text-secondary;
+      padding: 24px;
+      background-color: $primary-light;
+      border-radius: 4px;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  mat-card {
+    margin: 16px;
+    padding: 16px;
+  }
+
+  mat-card-title {
+    font-size: 20px;
+  }
+
+  mat-form-field {
+    .mat-form-field-flex {
+      padding: 0 12px;
+    }
+
+    input.mat-input-element {
+      padding: 12px 0;
+      font-size: 16px;
+    }
+
+    mat-icon.mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      margin-right: 12px;
+
+      &.clear-icon {
+        margin-left: 12px;
+      }
+    }
+
+    mat-hint {
+      padding: 6px 12px;
+      font-size: 11px;
+    }
+  }
+
+  mat-list-item {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px;
+    min-height: auto;
+
+    .content {
+      flex-direction: column;
+      gap: 8px;
+
+      span {
+        margin-bottom: 8px;
+        min-width: 100%;
+
+        &.details {
+          white-space: normal;
+          overflow: visible;
+          text-overflow: clip;
+        }
+      }
+    }
+
+    .actions {
+      margin-top: 8px;
+      justify-content: flex-end;
+      width: 100%;
+    }
+  }
+}

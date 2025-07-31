@@ -167,7 +167,7 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         Log::info('UserController update - Données reçues:', $request->all());
-        Log::info('UserController update - User ID:', $user->id);
+        Log::info('UserController update - User ID:', ['user_id' => $user->id]);
 
         // Validation des données de base
         $baseRules = [
@@ -177,6 +177,8 @@ class UserController extends Controller
             'actif' => 'sometimes|boolean',
             'telephone' => 'sometimes|nullable|string|max:20',
             'password' => 'sometimes|string|min:8',
+            // Ajouter les champs pour personnel et administrateur
+            'poste' => 'sometimes|nullable|string|max:255',
         ];
 
         // Validation conditionnelle selon le rôle
@@ -205,6 +207,10 @@ class UserController extends Controller
                 'medecin.horaire_consultation' => 'sometimes|nullable|json',
                 'medecin.disponible' => 'sometimes|boolean',
             ];
+        } elseif ($user->role === 'personnel' || $user->role === 'administrateur') {
+            $roleRules = [
+                'poste' => 'sometimes|required|string|max:255',
+            ];
         }
 
         $validator = Validator::make($request->all(), array_merge($baseRules, $roleRules));
@@ -230,6 +236,8 @@ class UserController extends Controller
                 return $value !== null;
             }));
 
+            Log::info('UserController update - Utilisateur mis à jour:', ['user_id' => $user->id]);
+
             // Mettre à jour les relations selon le rôle
             if ($user->role === 'patient' && $request->has('patient')) {
                 $patientData = $request->input('patient');
@@ -239,6 +247,10 @@ class UserController extends Controller
                     $user->patient->update($patientData);
                 } else {
                     $patientData['user_id'] = $user->id;
+                    // S'assurer que numero_assurance a une valeur
+                    if (empty($patientData['numero_assurance'])) {
+                        $patientData['numero_assurance'] = 'TEMP-' . $user->id;
+                    }
                     Patient::create($patientData);
                 }
             }
@@ -255,14 +267,38 @@ class UserController extends Controller
                 }
             }
 
-            if ($user->role === 'personnel' && $request->has('personnel')) {
-                $personnelData = array_merge(['user_id' => $user->id], $request->input('personnel'));
-                $user->personnel()->updateOrCreate(['user_id' => $user->id], $personnelData);
+            // Correction pour personnel
+            if ($user->role === 'personnel') {
+                $personnelData = [
+                    'user_id' => $user->id,
+                    'poste' => $request->input('poste', 'Assistant'),
+                    'departement' => $request->input('departement', 'Général'),
+                ];
+
+                Log::info('UserController update - Données personnel:', $personnelData);
+
+                if ($user->personnel) {
+                    $user->personnel->update($personnelData);
+                } else {
+                    Personnel::create($personnelData);
+                }
             }
 
-            if ($user->role === 'administrateur' && $request->has('administrateur')) {
-                $adminData = array_merge(['user_id' => $user->id], $request->input('administrateur'));
-                $user->administrateur()->updateOrCreate(['user_id' => $user->id], $adminData);
+            // Correction pour administrateur
+            if ($user->role === 'administrateur') {
+                $adminData = [
+                    'user_id' => $user->id,
+                    'poste' => $request->input('poste', 'Administrateur'),
+                    'niveau_acces' => $request->input('niveau_acces', 'standard'),
+                ];
+
+                Log::info('UserController update - Données administrateur:', $adminData);
+
+                if ($user->administrateur) {
+                    $user->administrateur->update($adminData);
+                } else {
+                    Administrateur::create($adminData);
+                }
             }
 
             DB::commit();
@@ -270,7 +306,7 @@ class UserController extends Controller
             // Recharger l'utilisateur avec ses relations
             $userWithRelations = User::with(['patient', 'medecin', 'personnel', 'administrateur'])->find($user->id);
 
-            Log::info('UserController update - Succès:', ['user' => $userWithRelations]);
+            Log::info('UserController update - Succès:', ['user_id' => $userWithRelations->id]);
 
             return response()->json([
                 'message' => 'Utilisateur mis à jour avec succès',
@@ -279,7 +315,11 @@ class UserController extends Controller
 
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error('UserController update - Erreur:', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            Log::error('UserController update - Erreur:', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
             return response()->json([
                 'type' => 'HTTP_ERROR',

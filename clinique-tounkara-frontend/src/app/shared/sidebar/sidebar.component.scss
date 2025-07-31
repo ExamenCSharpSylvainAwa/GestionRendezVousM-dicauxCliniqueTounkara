@@ -1,189 +1,538 @@
-/* sidebar.component.scss */
+/* Conteneur principal */
 .sidenav-container {
   height: 100vh;
-  background-color: #fafafa;
+  background: linear-gradient(135deg, #e0f2f7 0%, #c1e4f4 100%); /* Un dégradé de bleu clair doux pour le fond général (inchangé) */
+  overflow: hidden;
 }
 
+/* Sidebar principale */
 mat-sidenav {
-  width: 280px;
-  background-color: #cecaca;
-  color: white;
-  box-shadow: 3px 0 6px rgba(0, 0, 0, 0.1);
+  width: 320px;
+  background: linear-gradient(180deg, #0D1B2A 0%, #1B263B 100%); /* Dégradé de bleu nuit très profond */
+  border-right: none;
+  box-shadow:
+    5px 0 25px rgba(0,0,0,0.3), /* Ombre plus prononcée */
+    inset -1px 0 0 rgba(255,255,255,0.1);
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 
+  /* En-tête de la sidebar */
   .sidebar-header {
-    padding: 20px 16px;
-    background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 25px 20px;
+    background: linear-gradient(135deg, #4d81da 0%, #3895c4 100%); /* Dégradé de bleu foncé légèrement plus vif pour l'en-tête */
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    position: relative;
+    overflow: hidden;
 
-    h2 {
-      margin: 0 0 12px 0;
-      font-size: 18px;
-      font-weight: 600;
-      color: white;
+    &::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+      animation: pulse 4s ease-in-out infinite;
     }
 
-    .user-info {
+    .clinic-info {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.9);
+      gap: 15px;
+      margin-bottom: 20px;
+      position: relative;
+      z-index: 2;
 
-      mat-icon {
+      .clinic-logo {
+        width: 45px;
+        height: 45px;
+        background: rgba(255,255,255,0.3);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.4);
+
+        mat-icon {
+          color: white;
+          font-size: 24px;
+          width: 24px;
+          height: 24px;
+        }
+      }
+
+      h2 {
+        margin: 0;
         font-size: 20px;
-        width: 20px;
-        height: 20px;
+        font-weight: 600;
+        color: white;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        letter-spacing: 0.5px;
+      }
+    }
+
+    .user-card {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 15px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.3);
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 2;
+
+      &:hover {
+        background: rgba(255,255,255,0.3);
+        transform: translateY(-2px);
+      }
+
+      .user-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        border: 2px solid rgba(255,255,255,0.4);
+      }
+
+      .user-details {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+
+        .user-name {
+          font-weight: 600;
+          color: white;
+          font-size: 14px;
+          margin-bottom: 2px;
+        }
+
+        .user-role {
+          font-size: 12px;
+          color: rgba(255,255,255,0.9);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
       }
     }
   }
-}
 
-mat-nav-list {
-  padding-top: 8px;
+  /* Liste de navigation */
+  .nav-list {
+    padding: 20px 0;
+    height: calc(100vh - 200px);
+    overflow-y: auto;
+    overflow-x: hidden;
 
-  a[mat-list-item] {
-    color: rgba(255, 255, 255, 0.9);
-    margin: 4px 8px;
-    border-radius: 8px;
-    transition: all 0.2s ease-in-out;
-    
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-      color: white;
+    /* Scrollbar personnalisée */
+    &::-webkit-scrollbar {
+      width: 6px;
     }
 
-    &.active {
-      background-color: rgba(255, 255, 255, 0.15);
-      color: white;
-      font-weight: 500;
-      
-      mat-icon {
-        color: white;
+    &::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.15);
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.4);
+
+      &:hover {
+        background: rgba(255,255,255,0.6);
       }
     }
 
-    mat-icon {
-      color: rgba(255, 255, 255, 0.8);
-      margin-right: 16px;
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-    }
+    /* Sections de navigation */
+    .nav-section {
+      margin-bottom: 25px;
+      padding: 0 15px;
 
-    // Style spécial pour le bouton de déconnexion
-    &:last-child {
-      margin-top: 16px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      padding-top: 8px;
-      
-      &:hover {
-        background-color: rgba(244, 67, 54, 0.1);
-        
+      .section-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 15px;
+        color: rgba(255,255,255,0.85); /* Titre de section plus clair */
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+        border-bottom: 1px solid rgba(255,255,255,0.15);
+
         mat-icon {
-          color: #ff5252;
+          color: rgba(255,255,255,0.85); /* Icônes des titres de section en blanc */
+          font-size: 16px;
+          width: 16px;
+          height: 16px;
+        }
+      }
+
+      /* Items de navigation */
+      .nav-item {
+        margin: 6px 0;
+        border-radius: 12px;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        position: relative;
+        overflow: hidden;
+        color: rgba(255,255,255,0.95); /* Couleur du texte des items par défaut */
+        min-height: 48px;
+
+        &::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+          transition: left 0.5s ease;
+        }
+
+        .nav-content {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          padding: 12px 20px;
+          position: relative;
+          z-index: 2;
+
+          mat-icon {
+            color: white; /* Icônes des liens en blanc */
+            font-size: 20px;
+            width: 20px;
+            height: 20px;
+            transition: all 0.3s ease;
+          }
+
+          span {
+            color: white; /* Écriture des liens en blanc */
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+          }
+        }
+
+        .nav-indicator {
+          position: absolute;
+          right: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 4px;
+          height: 0;
+          background: linear-gradient(135deg, #ffd700, #ffa000); /* Un dégradé de jaune-orange vif (inchangé) */
+          border-radius: 2px;
+          transition: all 0.3s ease;
+        }
+
+        &:hover {
+          background: rgba(255,255,255,0.15);
+          color: white; /* Garde le texte en blanc au survol */
+          transform: translateX(8px);
+
+          &::before {
+            left: 100%;
+          }
+
+          .nav-content {
+            mat-icon {
+              transform: scale(1.1);
+              // Les couleurs d'icônes spécifiques au survol/actif sont définies plus bas
+            }
+          }
+
+          .nav-indicator {
+            height: 20px;
+          }
+        }
+
+        &.active {
+          background: linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.15) 100%);
+          color: white; /* Garde le texte en blanc quand actif */
+          transform: translateX(8px);
+          box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+
+          .nav-content {
+            font-weight: 600;
+
+            mat-icon {
+              transform: scale(1.1);
+              // Les couleurs d'icônes spécifiques au survol/actif sont définies plus bas
+            }
+          }
+
+          .nav-indicator {
+            height: 30px;
+            background: linear-gradient(135deg, #8bc34a, #aed581); /* Un dégradé de vert frais pour l'actif (inchangé) */
+          }
+        }
+      }
+
+      /* Section déconnexion */
+      &.logout-section {
+        margin-top: auto;
+        padding-top: 20px;
+        border-top: 1px solid rgba(255,255,255,0.15);
+
+        .nav-item.logout {
+          &:hover {
+            background: rgba(255, 87, 34, 0.2);
+            color: #ff5722; /* Le texte de déconnexion reste rouge orangé au survol pour signaler une action différente */
+
+            .nav-content mat-icon {
+              color: #ff5722;
+            }
+
+            .nav-indicator {
+              background: linear-gradient(135deg, #ff5722, #e64a19);
+            }
+          }
         }
       }
     }
   }
 }
 
+/* Contenu principal */
 mat-sidenav-content {
-  padding: 0;
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); /* Dégradé de gris bleu clair, inchangé */
   min-height: 100vh;
+  position: relative;
 
   .menu-button {
     position: fixed;
-    top: 16px;
-    left: 16px;
+    top: 20px;
+    left: 20px;
     z-index: 1000;
-    background-color: white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    
+    background: white;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    border-radius: 12px;
+    width: 48px;
+    height: 48px;
+    transition: all 0.3s ease;
+
     &:hover {
-      background-color: #f5f5f5;
+      background: #f8f9fa;
+      transform: scale(1.05);
+      box-shadow: 0 6px 25px rgba(0,0,0,0.2);
+    }
+
+    mat-icon {
+      color: #2c3e50;
     }
   }
 }
 
-// Responsive adjustments
+/* Styles spécifiques par type de navigation pour les ICÔNES (car le texte est maintenant blanc par défaut) */
+/* Ces couleurs d'icônes sont celles qui apparaîtront au survol ou lorsque l'élément est actif */
+/* Dashboard */
+.nav-item.dashboard {
+  &:hover, &.active {
+    .nav-content mat-icon {
+      color: #64b5f6; /* Bleu clair */
+    }
+  }
+}
+
+/* Profil */
+.nav-item.profile {
+  &:hover, &.active {
+    .nav-content mat-icon {
+      color: #ba68c8; /* Mauve clair */
+    }
+  }
+}
+
+/* Rendez-vous */
+.nav-item.appointments {
+  &:hover, &.active {
+    .nav-content mat-icon {
+      color: #ffb74d; /* Orange clair */
+    }
+  }
+}
+
+/* Médical */
+.nav-item.medical {
+  &:hover, &.active {
+    .nav-content mat-icon {
+      color: #81c784; /* Vert doux */
+    }
+  }
+}
+
+/* Paiements */
+.nav-item.payments, .nav-item.billing, .nav-item.billing-manage {
+  &:hover, &.active {
+    .nav-content mat-icon {
+      color: #ff8a65; /* Rouge orangé clair */
+    }
+  }
+}
+
+/* Planning */
+.nav-item.schedule, .nav-item.schedule-edit {
+  &:hover, &.active {
+    .nav-content mat-icon {
+      color: #4db6ac; /* Turquoise */
+    }
+  }
+}
+
+/* Prescriptions */
+.nav-item.prescriptions {
+  &:hover, &.active {
+    .nav-content mat-icon {
+      color: #e57373; /* Rouge rose */
+    }
+  }
+}
+
+/* Consultations */
+.nav-item.consultations {
+  &:hover, &.active {
+    .nav-content mat-icon {
+      color: #90a4ae; /* Bleu gris */
+    }
+  }
+}
+
+/* Utilisateurs */
+.nav-item.users, .nav-item.patients, .nav-item.doctors {
+  &:hover, &.active {
+    .nav-content mat-icon {
+      color: #7986cb; /* Bleu violet */
+    }
+  }
+}
+
+/* Permissions */
+.nav-item.permissions {
+  &:hover, &.active {
+    .nav-content mat-icon {
+      color: #ff7043; /* Orange vif */
+    }
+  }
+}
+
+/* Rapports */
+.nav-item.reports {
+  &:hover, &.active {
+    .nav-content mat-icon {
+      color: #4dd0e1; /* Cyan */
+    }
+  }
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+}
+
+/* Responsive design */
 @media (max-width: 768px) {
   mat-sidenav {
-    width: 260px;
-    
+    width: 280px;
+
     .sidebar-header {
-      padding: 16px 12px;
-      
-      h2 {
-        font-size: 16px;
+      padding: 20px 15px;
+
+      .clinic-info h2 {
+        font-size: 18px;
+      }
+
+      .user-card {
+        padding: 12px;
+
+        .user-avatar {
+          width: 40px;
+          height: 40px;
+          font-size: 14px;
+        }
+
+        .user-details {
+          .user-name {
+            font-size: 13px;
+          }
+          .user-role {
+            font-size: 11px;
+          }
+        }
+      }
+    }
+
+    .nav-list {
+      .nav-section {
+        padding: 0 10px;
+
+        .nav-item .nav-content {
+          padding: 10px 15px;
+          gap: 12px;
+
+          mat-icon {
+            font-size: 18px;
+            width: 18px;
+            height: 18px;
+          }
+
+          span {
+            font-size: 13px;
+          }
+        }
       }
     }
   }
+}
 
-  mat-nav-list a[mat-list-item] {
-    font-size: 14px;
-    margin: 2px 4px;
-    
-    mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      margin-right: 12px;
-    }
+@media (max-width: 480px) {
+  mat-sidenav {
+    width: 260px;
   }
 }
 
-// Animation pour l'ouverture/fermeture
+/* Animation d'entrée pour la sidebar */
 mat-sidenav {
+  animation: slideInLeft 0.4s ease-out;
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Amélioration de l'accessibilité */
+.nav-item {
+  &:focus {
+    outline: 2px solid rgba(255,255,255,0.7);
+    outline-offset: 2px;
+  }
+}
+
+/* État de chargement pour les transitions */
+.sidenav-container {
   .mat-drawer-transition .mat-drawer-content {
     transition-duration: 400ms;
     transition-timing-function: cubic-bezier(0.25, 0.8, 0.25, 1);
-  }
-}
-
-// Style pour le contenu principal avec sidebar ouverte
-.mat-drawer-container.mat-drawer-container-has-open {
-  .mat-drawer-content {
-    margin-left: 0;
-  }
-}
-
-// Couleurs personnalisées pour différents types de liens
-mat-nav-list {
-  // Liens de gestion (patients, médecins, etc.)
-  a[mat-list-item][routerLink*="patients"],
-  a[mat-list-item][routerLink*="doctors"],
-  a[mat-list-item][routerLink*="users"] {
-    &:hover, &.active {
-      background-color: rgba(76, 175, 80, 0.1);
-      
-      mat-icon {
-        color: #4caf50;
-      }
-    }
-  }
-
-  // Liens de rendez-vous et planning
-  a[mat-list-item][routerLink*="appointments"],
-  a[mat-list-item][routerLink*="schedule"] {
-    &:hover, &.active {
-      background-color: rgba(255, 152, 0, 0.1);
-      
-      mat-icon {
-        color: #ff9800;
-      }
-    }
-  }
-
-  // Liens financiers
-  a[mat-list-item][routerLink*="billing"],
-  a[mat-list-item][routerLink*="payments"] {
-    &:hover, &.active {
-      background-color: rgba(156, 39, 176, 0.1);
-      
-      mat-icon {
-        color: #9c27b0;
-      }
-    }
   }
 }

@@ -1,8 +1,7 @@
-
 <div class="login-container">
   <!-- En-tête avec un design attractif -->
   <div class="header">
-    <h1 class="title">Bienvenue à la Clinique</h1>
+    <h1 class="title">Bienvenue à la Clinique Tounkara</h1>
     <p class="subtitle">Connectez-vous pour accéder à votre compte</p>
   </div>
 
@@ -13,30 +12,35 @@
     </mat-card-header>
     <mat-card-content>
       <form (ngSubmit)="onSubmit()" class="login-form">
-        <mat-form-field appearance="fill" class="full-width">
+        <mat-form-field appearance="outline" class="full-width"> <!-- Changé en 'outline' pour un look plus moderne -->
           <mat-label>Email</mat-label>
-          <input matInput placeholder="Email" [(ngModel)]="credentials.email" name="email" required>
+          <input matInput placeholder="votre.email@exemple.com" [(ngModel)]="credentials.email" name="email" required>
         </mat-form-field>
-        <mat-form-field appearance="fill" class="full-width">
+        <mat-form-field appearance="outline" class="full-width"> <!-- Changé en 'outline' -->
           <mat-label>Mot de passe</mat-label>
-          <input matInput type="password" placeholder="Mot de passe" [(ngModel)]="credentials.password" name="password" required>
+          <input matInput type="password" placeholder="Votre mot de passe" [(ngModel)]="credentials.password" name="password" required>
         </mat-form-field>
-       <button mat-raised-button color="primary" type="submit" class="submit-button" [disabled]="isLoading">
-        @if (!isLoading) {
-          Connexion
-        } @else {
-          <mat-spinner diameter="20" color="primary"></mat-spinner>
-        }
-      </button>
 
+        <!-- Message d'erreur affiché au-dessus du bouton de soumission -->
+        @if (errorMessage) {
+          <div class="error-message-box">
+            <mat-icon class="error-icon">error_outline</mat-icon>
+            <p>{{ errorMessage }}</p>
+          </div>
+        }
+
+        <button mat-raised-button color="primary" type="submit" class="submit-button" [disabled]="isLoading">
+          @if (!isLoading) {
+            Connexion
+          } @else {
+            <mat-spinner diameter="20" color="accent"></mat-spinner> <!-- Couleur du spinner ajustée -->
+          }
+        </button>
       </form>
       <div class="register-link">
         <p>Pas encore inscrit ?</p>
         <button mat-button (click)="goToRegister()" color="accent" class="register-button">S'inscrire</button>
       </div>
-      @if (errorMessage) {
-        <p class="error-message">{{ errorMessage }}</p>
-      }
     </mat-card-content>
   </mat-card>
 </div>

@@ -16,4 +16,8 @@ class Administrateur extends Model
     {
         return $this->belongsTo(User::class);
     }
+    public function rapports()
+    {
+        return $this->hasMany(Rapport::class);
+    }
 }

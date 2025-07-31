@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\PaiementController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,3 +17,14 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/paiement/callback', [PaiementController::class, 'callback'])->name('paydunya.callback');
+Route::get('/paiement/success', function() {
+    return view('paiement.success');
+})->name('paydunya.success');
+Route::get('/paiement/cancel', function() {
+    return view('paiement.cancel');
+})->name('paydunya.cancel');
+Route::get('/paiement/error', function() {
+    return view('paiement.error');
+})->name('paydunya.error');

@@ -69,9 +69,18 @@ class RendezVous extends Model
      * Définit la relation "has one" avec le modèle Paiement.
      * Un rendez-vous peut avoir un paiement associé.
      */
+
+    public function paiements()
+    {
+        return $this->hasMany(Paiement::class, 'rendez_vous_id');
+    }
+
+    /**
+     * Relation pour obtenir le dernier paiement
+     */
     public function paiement()
     {
-        return $this->hasOne(Paiement::class);
+        return $this->hasOne(Paiement::class, 'rendez_vous_id')->latest();
     }
 }
 

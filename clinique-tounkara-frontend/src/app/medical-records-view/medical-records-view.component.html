@@ -1,0 +1,198 @@
+<div class="medical-record-container">
+  <h2>Mon Dossier Médical</h2>
+
+  <mat-spinner *ngIf="isLoading" diameter="50"></mat-spinner>
+
+  <ng-container *ngIf="!isLoading && dossierMedical">
+    <mat-card class="medical-record-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>folder_shared</mat-icon>
+          Dossier Médical de {{ dossierMedical.patient.user.nom }} {{ dossierMedical.patient.user.prenom }}
+        </mat-card-title>
+        <mat-card-subtitle>
+          Créé le {{ formatDate(dossierMedical.date_creation) }}
+        </mat-card-subtitle>
+      </mat-card-header>
+      
+      <mat-card-content>
+        <!-- Informations du patient -->
+        <mat-expansion-panel class="patient-info-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>person</mat-icon>
+              Informations du Patient
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          
+          <div class="patient-info">
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="label">Nom complet :</span>
+                <span class="value">{{ dossierMedical.patient.user.nom }} {{ dossierMedical.patient.user.prenom }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Email :</span>
+                <span class="value">{{ dossierMedical.patient.user.email }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Numéro d'assurance :</span>
+                <span class="value">{{ dossierMedical.patient.numero_assurance || 'Non spécifié' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Date de naissance :</span>
+                <span class="value">{{ dossierMedical.patient.date_naissance ? formatDate(dossierMedical.patient.date_naissance) : 'Non spécifiée' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Sexe :</span>
+                <span class="value">{{ dossierMedical.patient.sexe || 'Non spécifié' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Groupe sanguin :</span>
+                <span class="value">{{ dossierMedical.patient.groupe_sanguin || 'Non spécifié' }}</span>
+              </div>
+            </div>
+            
+            <div class="info-item full-width" *ngIf="dossierMedical.patient?.antecedent_medicaux">
+              <span class="label">Antécédents médicaux :</span>
+              <div class="value antecedents">{{ dossierMedical.patient.antecedent_medicaux }}</div>
+            </div>
+          </div>
+        </mat-expansion-panel>
+
+        <!-- Consultations -->
+        <div class="consultations-section">
+          <h3 class="section-title">
+            <mat-icon>medical_services</mat-icon>
+            Consultations ({{ dossierMedical.consultations.length || 0 }})
+          </h3>
+          
+          <div *ngIf="dossierMedical.consultations?.length; else noConsultations" class="consultations-list">
+            <mat-card *ngFor="let consultation of dossierMedical.consultations; let i = index" class="consultation-card">
+              <mat-card-header>
+                <div mat-card-avatar class="consultation-avatar">
+                  <mat-icon>event_note</mat-icon>
+                </div>
+                <mat-card-title>Consultation {{ i + 1 }}</mat-card-title>
+                <mat-card-subtitle>{{ formatDate(consultation.date) }}</mat-card-subtitle>
+              </mat-card-header>
+              
+              <mat-card-content>
+                <div class="consultation-details">
+                  <div class="detail-section">
+                    <h4><mat-icon>sick</mat-icon> Symptômes</h4>
+                    <p>{{ consultation.symptomes }}</p>
+                  </div>
+                  
+                  <div class="detail-section">
+                    <h4><mat-icon>diagnosis</mat-icon> Diagnostic</h4>
+                    <p>{{ consultation.diagnostic }}</p>
+                  </div>
+                  
+                  <div class="detail-section" *ngIf="consultation.recommandations">
+                    <h4><mat-icon>recommend</mat-icon> Recommandations</h4>
+                    <p>{{ consultation.recommandations }}</p>
+                  </div>
+                  
+                  <div class="detail-section" *ngIf="consultation.notes">
+                    <h4><mat-icon>note</mat-icon> Notes</h4>
+                    <p>{{ consultation.notes }}</p>
+                  </div>
+                </div>
+
+                <!-- Section Prescriptions -->
+                <div class="prescriptions-section" *ngIf="hasPrescriptions(consultation)">
+                  <h4 class="prescriptions-title">
+                    <mat-icon>local_pharmacy</mat-icon>
+                    Prescriptions
+                  </h4>
+                  
+                  <div class="prescriptions-container">
+                    <div *ngFor="let prescription of getPrescriptions(consultation); let j = index" 
+                         class="prescription-item">
+                      <div class="prescription-header">
+                        <h5>Prescription {{ j + 1 }}</h5>
+                        <div class="prescription-dates">
+                          <span class="emission-date">
+                            <mat-icon>today</mat-icon>
+                            Émise le {{ formatDate(prescription.date_emission) }}
+                          </span>
+                          <span class="expiration-date">
+                            <mat-icon>schedule</mat-icon>
+                            Expire le {{ formatDate(prescription.date_expiration) }}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div class="prescription-description" *ngIf="prescription.description">
+                        <strong>Description :</strong> {{ prescription.description }}
+                      </div>
+                      
+                      <!-- Médicaments -->
+                      <div class="medicaments-section" *ngIf="hasMedicaments(prescription)">
+                        <h6><mat-icon>medication</mat-icon> Médicaments</h6>
+                        <div class="medicaments-list">
+                          <div *ngFor="let medicament of getMedicaments(prescription)" class="medicament-item">
+                            <div class="medicament-name">
+                              <mat-icon>pill</mat-icon>
+                              <strong>{{ medicament.nom }}</strong>
+                            </div>
+                            <div class="medicament-details">
+                              <div class="posologie">
+                                <span class="label">Posologie :</span>
+                                <span class="value">{{ medicament.posologie }}</span>
+                              </div>
+                              <div class="duree">
+                                <span class="label">Durée :</span>
+                                <span class="value">{{ medicament.duree }}</span>
+                              </div>
+                              <div class="instructions" *ngIf="medicament.instructions">
+                                <span class="label">Instructions :</span>
+                                <span class="value">{{ medicament.instructions }}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="no-medicaments" *ngIf="!hasMedicaments(prescription)">
+                        <mat-icon>info_outline</mat-icon>
+                        <span>Aucun médicament spécifié pour cette prescription</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Message si pas de prescriptions -->
+                <div class="no-prescriptions" *ngIf="!hasPrescriptions(consultation)">
+                  <mat-icon>info_outline</mat-icon>
+                  <span>Aucune prescription pour cette consultation</span>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+          
+          <ng-template #noConsultations>
+            <mat-card class="no-data-card">
+              <mat-card-content class="no-data-content">
+                <mat-icon class="no-data-icon">info_outline</mat-icon>
+                <h3>Aucune consultation</h3>
+                <p>Aucune consultation n'a encore été enregistrée dans votre dossier médical.</p>
+              </mat-card-content>
+            </mat-card>
+          </ng-template>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </ng-container>
+
+  <ng-container *ngIf="!isLoading && !dossierMedical">
+    <mat-card class="no-data-card">
+      <mat-card-content class="no-data-content">
+        <mat-icon class="no-data-icon">warning</mat-icon>
+        <h3>Dossier médical introuvable</h3>
+        <p>Aucun dossier médical n'a été trouvé pour votre compte.</p>
+      </mat-card-content>
+    </mat-card>
+  </ng-container>
+</div>

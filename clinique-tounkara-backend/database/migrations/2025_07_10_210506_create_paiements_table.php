@@ -17,7 +17,8 @@ return new class extends Migration
             $table->date('date');
             $table->decimal('montant', 10, 2);
             $table->enum('statut', ['en_attente', 'paye', 'annule'])->default('en_attente');
-            $table->string('reference')->unique();
+            $table->string('reference')->nullable()->unique();
+            $table->string('paydunya_token')->nullable()->unique();
             $table->timestamps();
         });
     }
