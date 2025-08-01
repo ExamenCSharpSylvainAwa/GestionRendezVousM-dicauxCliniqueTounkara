@@ -9,7 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF; // Assurez-vous que ce package est installé (composer require barryvdh/laravel-dompdf)
+use Carbon\Carbon; // Importez Carbon
 
 class FactureController extends Controller
 {
@@ -112,8 +113,11 @@ class FactureController extends Controller
                 'user_id' => Auth::id(),
                 'total' => $factures->total(),
                 'current_page' => $factures->currentPage(),
-                'relations_included' => $includes,
-            ]);
+                'last_page' => $factures->lastPage(),
+                'per_page' => $factures->perPage(),
+                'total' => $factures->total(),
+                'message' => 'Factures récupérées avec succès.',
+            ], 200);
 
             return response()->json([
                 'data' => $formattedFactures,
@@ -493,6 +497,12 @@ class FactureController extends Controller
         }
     }
 
+    /**
+     * Génère une facture PDF pour un paiement donné.
+     *
+     * @param string $id L'ID de la facture à générer en PDF.
+     * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse
+     */
     public function generatePDF($id)
     {
         try {
@@ -523,12 +533,12 @@ class FactureController extends Controller
                 'statut' => $facture->statut
             ]);
 
-            // 3. Vérifier les données nécessaires
+            // 3. Vérifier les données nécessaires pour le PDF
             if (!$facture->paiement) {
                 Log::error("Paiement manquant pour facture $id", ['user_id' => auth()->id()]);
                 return response()->json([
                     'error' => 'Données incomplètes',
-                    'message' => 'Aucun paiement associé à cette facture.'
+                    'message' => 'Aucun paiement associé à cette facture. Impossible de générer le PDF.'
                 ], 400);
             }
 
@@ -536,7 +546,7 @@ class FactureController extends Controller
                 Log::error("Rendez-vous manquant pour facture $id", ['user_id' => auth()->id()]);
                 return response()->json([
                     'error' => 'Données incomplètes',
-                    'message' => 'Aucun rendez-vous associé au paiement.'
+                    'message' => 'Aucun rendez-vous associé au paiement. Impossible de générer le PDF.'
                 ], 400);
             }
 
@@ -546,7 +556,7 @@ class FactureController extends Controller
                 Log::error("Patient manquant pour facture $id", ['user_id' => auth()->id()]);
                 return response()->json([
                     'error' => 'Données incomplètes',
-                    'message' => 'Informations patient manquantes.'
+                    'message' => 'Les informations du patient sont manquantes pour cette facture. Impossible de générer le PDF.'
                 ], 400);
             }
 
@@ -554,68 +564,51 @@ class FactureController extends Controller
                 Log::error("Médecin manquant pour facture $id", ['user_id' => auth()->id()]);
                 return response()->json([
                     'error' => 'Données incomplètes',
-                    'message' => 'Informations médecin manquantes.'
+                    'message' => 'Les informations du médecin sont manquantes pour cette facture. Impossible de générer le PDF.'
                 ], 400);
             }
 
-            // 4. Préparer les données pour le PDF
+            // Données à passer à la vue Blade pour le PDF
             $data = [
                 'facture' => $facture,
                 'paiement' => $facture->paiement,
-                'rendez_vous' => $rendezVous,
-                'patient' => $rendezVous->patient,
-                'medecin' => $rendezVous->medecin,
-                'patient_user' => $rendezVous->patient->user,
-                'medecin_user' => $rendezVous->medecin->user,
-                'date_generation' => now()->format('d/m/Y H:i'),
-                'clinique' => [
-                    'nom' => 'Clinique Tounkara',
-                    'adresse' => 'Dakar, Sénégal',
-                    'telephone' => '+221 XX XXX XX XX',
-                    'email' => 'contact@clinique-tounkara.sn'
-                ]
+                'rendezVous' => $rendezVous,
+                'patientUser' => $rendezVous->patient->user,
+                'medecinUser' => $rendezVous->medecin->user,
+                'cliniqueName' => config('app.name', 'Clinique Tounkara'),
+                'cliniqueAddress' => 'Rue 10, Keur Massar, Dakar, Sénégal',
+                'cliniquePhone' => '+221701234567',
+                'cliniqueEmail' => 'contact@cliniquetounkara.com',
+                'logoUrl' => public_path('assets/logo.png'), // Chemin vers votre logo
             ];
 
-            Log::info("Données PDF préparées", [
-                'user_id' => auth()->id(),
-                'facture_id' => $facture->id,
-                'patient' => $data['patient_user']->nom . ' ' . $data['patient_user']->prenom,
-                'medecin' => $data['medecin_user']->nom . ' ' . $data['medecin_user']->prenom
-            ]);
+            // Charger la vue Blade et la convertir en PDF
+            $pdf = PDF::loadView('pdf.facture', $data); // Vous devrez créer cette vue Blade
 
-            // 5. Générer le PDF
-            $pdf = PDF::loadView('pdf.facture', $data);
-
-            // Configuration du PDF
+            // Configuration du PDF (options par défaut si non spécifiées)
             $pdf->setPaper('A4', 'portrait');
             $pdf->setOptions([
                 'dpi' => 150,
-                'defaultFont' => 'Arial',
+                'defaultFont' => 'Arial', // Assurez-vous que cette police est disponible ou utilisez 'DejaVu Sans'
                 'isHtml5ParserEnabled' => true,
                 'isPhpEnabled' => true
             ]);
 
-            Log::info("PDF généré avec succès pour facture $id", ['user_id' => auth()->id()]);
+            Log::info("PDF généré avec succès pour facture: " . $facture->numero, ['facture_id' => $facture->id]);
 
-            // 6. Définir le nom du fichier
-            $filename = "facture_{$facture->numero}_{$facture->id}.pdf";
-
-            // 7. Retourner le PDF en téléchargement
-            return $pdf->download($filename);
+            // Retourner le PDF en téléchargement
+            return $pdf->download('facture-' . $facture->numero . '.pdf');
 
         } catch (\Exception $e) {
-            Log::error("Erreur lors de la génération PDF pour facture $id", [
-                'user_id' => auth()->id(),
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
+            Log::error('Erreur lors de la génération du PDF de la facture : ' . $e->getMessage(), [
+                'facture_id' => $id,
+                'trace' => $e->getTraceAsString(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
+                'file' => $e->getFile()
             ]);
-
             return response()->json([
-                'error' => 'Erreur lors de la génération du PDF',
-                'message' => 'Une erreur interne s\'est produite lors de la génération du PDF.',
-                'debug' => config('app.debug') ? $e->getMessage() : null
+                'error' => 'Erreur de génération PDF',
+                'message' => 'Une erreur est survenue lors de la génération de la facture PDF.'
             ], 500);
         }
     }

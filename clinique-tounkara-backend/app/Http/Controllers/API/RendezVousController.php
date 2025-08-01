@@ -11,14 +11,22 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Log; // Assurez-vous que ceci est bien importé
+use Illuminate\Support\Facades\Log;
 use App\Models\Schedule;
 use Illuminate\Database\QueryException;
+
+// Importez toutes les classes de notification nécessaires
+use App\Notifications\RendezVousConfirmeNotification; // Pour le patient après validation médecin
+use App\Notifications\RendezVousPrisNotification;     // Pour le médecin après prise de RDV par patient
+use App\Notifications\RendezVousTermineNotification;  // Pour le patient après RDV terminé
+use App\Notifications\RendezVousAnnuleNotification;   // Pour patient et médecin après annulation
+use App\Notifications\RendezVousReporteNotification;  // Pour patient et médecin après report
+use App\Models\Notification as AppNotification; // Renommez votre modèle Notification pour éviter le conflit
 
 class RendezVousController extends Controller
 {
     /**
-     * Display a paginated list of appointments for the authenticated doctor.
+     * Display a paginated list of appointments for the authenticated user (patient or doctor).
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
@@ -27,7 +35,7 @@ class RendezVousController extends Controller
     {
         $user = Auth::user();
 
-        // MODIFICATION: Ajout de la relation 'paiement' pour charger les informations de paiement
+        // Load necessary relations for all appointment queries
         $query = RendezVous::with(['patient.user', 'medecin.user', 'paiement']);
 
         if ($user->role === 'patient') {
@@ -35,23 +43,38 @@ class RendezVousController extends Controller
             if ($patient) {
                 $query->where('patient_id', $patient->id);
             } else {
+                Log::warning('RendezVousController@index: No patient profile found for authenticated user.', ['user_id' => $user->id]);
                 return response()->json(['data' => [], 'message' => 'No patient profile found.'], 200);
             }
         }
-        // Si c'est un médecin, filtrer par ses rendez-vous
+        // If it's a doctor, filter by their appointments
         elseif ($user->role === 'medecin') {
             $medecin = $user->medecin;
             if ($medecin) {
                 $query->where('medecin_id', $medecin->id);
+                Log::info('RendezVousController@index: Filtering appointments for doctor.', ['medecin_id' => $medecin->id]);
             } else {
+                Log::warning('RendezVousController@index: No doctor profile found for authenticated user.', ['user_id' => $user->id]);
                 return response()->json(['data' => [], 'message' => 'No doctor profile found.'], 200);
             }
         }
+        // For administrators or other roles, no specific filtering by patient/doctor ID is applied here,
+        // they would see all appointments or have other specific index methods.
+        // If an admin should see all, this block is fine.
 
-        // Trier par date/heure
+        // Order by date/time
         $query->orderBy('date_heure', 'asc');
 
-        return response()->json($query->paginate(10));
+        $rendezVousList = $query->paginate(10);
+
+        Log::info('RendezVousController@index: Appointments retrieved successfully.', [
+            'user_id' => $user->id,
+            'user_role' => $user->role,
+            'total_appointments' => $rendezVousList->total(),
+            'current_page' => $rendezVousList->currentPage()
+        ]);
+
+        return response()->json($rendezVousList);
     }
 
 
@@ -101,8 +124,39 @@ class RendezVousController extends Controller
                 'date_heure' => $request->date_heure,
                 'motif' => $request->motif,
                 'tarif' => $medecin->tarif_consultation,
-                'statut' => $request->input('statut', 'en_attente'),
+                'statut' => $request->input('statut', 'en_attente'), // Default status is 'en_attente'
             ]);
+
+            // --- NEW: Notification to the doctor after appointment booking by the patient ---
+            try {
+                $medecinUser = $medecin->user; // Retrieve the user linked to the doctor
+                if ($medecinUser) {
+                    $rendezVous->load('patient.user'); // Ensure patient user is loaded for notification content
+                    $medecinUser->notify(new RendezVousPrisNotification($rendezVous, $medecinUser));
+                    Log::info('Email notification for appointment booking sent to doctor.', [
+                        'rendez_vous_id' => $rendezVous->id,
+                        'recipient_email' => $medecinUser->email
+                    ]);
+
+                    // Log in your App\Models\Notification table
+                    AppNotification::create([
+                        'type' => 'nouveau_rendez_vous_medecin',
+                        'contenu' => 'Un nouveau rendez-vous a été pris par ' . $rendezVous->patient->user->nom . ' ' . $rendezVous->patient->user->prenom . ' pour le ' . Carbon::parse($rendezVous->date_heure)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') . '.',
+                        'date_envoi' => now(),
+                        'envoye' => true,
+                        'statut' => 'envoye',
+                        'methode_envoi' => 'email',
+                        // 'rendez_vous_id' => $rendezVous->id, // Ensure this column exists
+                    ]);
+                }
+            } catch (\Exception $notificationException) {
+                Log::error('Failed to send or log "RendezVousPrisNotification".', [
+                    'error' => $notificationException->getMessage(),
+                    'trace' => $notificationException->getTraceAsString(),
+                    'rendez_vous_id' => $rendezVous->id ?? 'N/A'
+                ]);
+            }
+            // --- END NEW ---
 
             return response()->json([
                 'message' => 'Appointment created successfully',
@@ -155,6 +209,8 @@ class RendezVousController extends Controller
             $jour = strtolower($date->format('l'));
             $heure = $date->format('H:i');
 
+            // Note: horaire_consultation is likely a JSON column on Medecin model
+            // If it's a separate table, adjust this part accordingly.
             $horairesMedecin = $medecin->horaire_consultation[$jour] ?? null;
 
             $rendezVousExistant = RendezVous::where('medecin_id', $medecin->id)
@@ -520,11 +576,11 @@ class RendezVousController extends Controller
 
         $validator = Validator::make($request->all(), [
             'statut' => ['required', 'string', Rule::in(['en_attente', 'confirme', 'annule', 'termine'])],
-            'reason' => ['nullable', 'string', 'max:500'],
+            'reason' => ['nullable', 'string', 'max:500'], // Reason for cancellation or rescheduling
         ]);
 
         if ($validator->fails()) {
-            Log::error('RendezVousController@updateStatut: Erreur de validation', ['errors' => $validator->errors()]);
+            Log::error('RendezVousController@updateStatut: Validation error', ['errors' => $validator->errors()]);
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
@@ -533,26 +589,118 @@ class RendezVousController extends Controller
             $newStatus = $request->statut;
             $reason = $request->input('reason');
 
-            Log::info('RendezVousController@updateStatut: Tentative de mise à jour du statut', [
+            Log::info('RendezVousController@updateStatut: Attempting to update status', [
                 'rendez_vous_id' => $rendezVous->id,
                 'ancien_statut' => $oldStatus,
                 'nouveau_statut' => $newStatus,
                 'raison' => $reason
             ]);
 
-            // Mettre à jour le statut et la raison d'annulation
-            // IMPORTANT: Ne PAS appeler $rendezVous->delete() ici pour l'annulation
+            // Update status and reason (if provided)
+            // IMPORTANT: Do NOT call $rendezVous->delete() here for cancellation
             $rendezVous->update([
                 'statut' => $newStatus,
-                'reason' => $reason
+                'reason' => $reason // Ensure this column exists in your rendez_vous table
             ]);
 
-            Log::info('RendezVousController@updateStatut: Statut du rendez-vous mis à jour avec succès.', [
+            Log::info('RendezVousController@updateStatut: Appointment status updated successfully.', [
                 'rendez_vous_id' => $rendezVous->id,
                 'new_status' => $newStatus,
                 'reason' => $reason,
-                'rendezVous_after_update' => $rendezVous->fresh()->toArray() // Recharger pour voir l'état actuel
+                'rendezVous_after_update' => $rendezVous->fresh()->toArray() // Reload to see current state
             ]);
+
+            // --- NEW: Notification sending logic based on status change ---
+            $patientUser = $rendezVous->patient->user;
+            $medecinUser = $rendezVous->medecin->user;
+
+            switch ($newStatus) {
+                case 'confirme':
+                    // Notification to patient to invite them to pay
+                    if ($oldStatus !== 'confirme') { // Avoid sending multiple times if already confirmed
+                        try {
+                            $patientUser->notify(new RendezVousConfirmeNotification($rendezVous, $patientUser));
+                            Log::info('Email notification for appointment confirmation sent to patient.', [
+                                'rendez_vous_id' => $rendezVous->id,
+                                'recipient_email' => $patientUser->email
+                            ]);
+                            AppNotification::create([
+                                'type' => 'rendez_vous_confirme_paiement_requis',
+                                'contenu' => 'Votre rendez-vous du ' . Carbon::parse($rendezVous->date_heure)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') . ' avec Dr. ' . $rendezVous->medecin->user->nom . ' a été confirmé. Paiement requis.',
+                                'date_envoi' => now(),
+                                'envoye' => true,
+                                'statut' => 'envoye',
+                                'methode_envoi' => 'email',
+                                // 'rendez_vous_id' => $rendezVous->id,
+                            ]);
+                        } catch (\Exception $e) {
+                            Log::error('Failed to send appointment confirmation notification to patient: ' . $e->getMessage(), ['rdv_id' => $rendezVous->id]);
+                        }
+                    }
+                    break;
+
+                case 'annule':
+                    // Notification to patient and doctor for cancellation
+                    if ($oldStatus !== 'annule') { // Avoid sending multiple times if already cancelled
+                        try {
+                            $patientUser->notify(new RendezVousAnnuleNotification($rendezVous, $reason ?? 'Non spécifié', 'patient'));
+                            Log::info('Email notification for cancellation sent to patient.', ['rdv_id' => $rendezVous->id, 'recipient_email' => $patientUser->email]);
+                            AppNotification::create([
+                                'type' => 'rendez_vous_annule_patient',
+                                'contenu' => 'Votre rendez-vous du ' . Carbon::parse($rendezVous->date_heure)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') . ' a été annulé. Motif: ' . ($reason ?? 'Non spécifié') . '.',
+                                'date_envoi' => now(),
+                                'envoye' => true,
+                                'statut' => 'envoye',
+                                'methode_envoi' => 'email',
+                                // 'rendez_vous_id' => $rendezVous->id,
+                            ]);
+                        } catch (\Exception $e) {
+                            Log::error('Failed to send appointment cancellation notification to patient: ' . $e->getMessage(), ['rdv_id' => $rendezVous->id]);
+                        }
+
+                        try {
+                            $medecinUser->notify(new RendezVousAnnuleNotification($rendezVous, $reason ?? 'Non spécifié', 'medecin'));
+                            Log::info('Email notification for cancellation sent to doctor.', ['rdv_id' => $rendezVous->id, 'recipient_email' => $medecinUser->email]);
+                            AppNotification::create([
+                                'type' => 'rendez_vous_annule_medecin',
+                                'contenu' => 'Le rendez-vous du ' . Carbon::parse($rendezVous->date_heure)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') . ' avec ' . $patientUser->nom . ' ' . $patientUser->prenom . ' a été annulé. Motif: ' . ($reason ?? 'Non spécifié') . '.',
+                                'date_envoi' => now(),
+                                'envoye' => true,
+                                'statut' => 'envoye',
+                                'methode_envoi' => 'email',
+                                // 'rendez_vous_id' => $rendezVous->id,
+                            ]);
+                        } catch (\Exception $e) {
+                            Log::error('Failed to send appointment cancellation notification to doctor: ' . $e->getMessage(), ['rdv_id' => $rendezVous->id]);
+                        }
+                    }
+                    break;
+
+                case 'termine':
+                    // Notification to patient after appointment finished
+                    if ($oldStatus !== 'termine') { // Avoid sending multiple times
+                        try {
+                            $patientUser->notify(new RendezVousTermineNotification($rendezVous, $patientUser));
+                            Log::info('Email notification for finished appointment sent to patient.', [
+                                'rendez_vous_id' => $rendezVous->id,
+                                'recipient_email' => $patientUser->email
+                            ]);
+                            AppNotification::create([
+                                'type' => 'rendez_vous_termine',
+                                'contenu' => 'Votre consultation du ' . Carbon::parse($rendezVous->date_heure)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') . ' avec Dr. ' . $rendezVous->medecin->user->nom . ' est terminée.',
+                                'date_envoi' => now(),
+                                'envoye' => true,
+                                'statut' => 'envoye',
+                                'methode_envoi' => 'email',
+                                // 'rendez_vous_id' => $rendezVous->id,
+                            ]);
+                        } catch (\Exception $e) {
+                            Log::error('Failed to send finished appointment notification to patient: ' . $e->getMessage(), ['rdv_id' => $rendezVous->id]);
+                        }
+                    }
+                    break;
+            }
+            // --- END NEW ---
 
             return response()->json([
                 'message' => 'Appointment status updated successfully',
@@ -560,7 +708,7 @@ class RendezVousController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('RendezVousController@updateStatut: Erreur inattendue lors de la mise à jour du statut: ' . $e->getMessage(), [
+            Log::error('RendezVousController@updateStatut: Unexpected error updating status: ' . $e->getMessage(), [
                 'appointment_id' => $rendezVous->id,
                 'request_data' => $request->all(),
                 'exception' => $e
@@ -583,14 +731,14 @@ class RendezVousController extends Controller
     {
         \Log::info('Attempting to reschedule appointment ' . $rendezVous->id . ':', $request->all());
 
-        // Validation pour tous les champs attendus du frontend
+        // Validation for all expected fields from the frontend
         $validator = Validator::make($request->all(), [
             'new_date_heure' => ['required', 'date_format:Y-m-d H:i:s', 'after_or_equal:now'],
             'reschedule_reason' => ['required', 'string', 'max:500'],
-            'patient_id' => ['required', 'exists:patients,id'], // Ajout de la validation
-            'medecin_id' => ['required', 'exists:medecins,id'], // Ajout de la validation
-            'motif' => ['required', 'string', 'max:255'],       // Ajout de la validation
-            'tarif' => ['required', 'numeric', 'min:0'],        // Ajout de la validation
+            'patient_id' => ['required', 'exists:patients,id'],
+            'medecin_id' => ['required', 'exists:medecins,id'],
+            'motif' => ['required', 'string', 'max:255'],
+            'tarif' => ['required', 'numeric', 'min:0'],
         ]);
 
         if ($validator->fails()) {
@@ -600,8 +748,9 @@ class RendezVousController extends Controller
 
         try {
             $newDateTime = Carbon::parse($request->new_date_heure);
+            $oldDateTime = $rendezVous->date_heure; // Capture the old date/time before update
 
-            $targetMedecinId = $request->medecin_id; // Utilisation directe du medecin_id du request
+            $targetMedecinId = $request->medecin_id;
             $medecin = Medecin::find($targetMedecinId);
 
             if (!$medecin) {
@@ -612,7 +761,7 @@ class RendezVousController extends Controller
                 return response()->json(['message' => 'Associated doctor not found for rescheduling.'], 404);
             }
 
-            // Vérifier la disponibilité pour le nouveau créneau, en excluant le rendez-vous actuel
+            // Check availability for the new slot, excluding the current appointment
             if (!$this->verifierDisponibilite($medecin, $newDateTime->toDateTimeString(), $rendezVous->id)) {
                 return response()->json([
                     'message' => 'Doctor not available at this new slot (schedule or already taken).',
@@ -620,19 +769,65 @@ class RendezVousController extends Controller
                 ], 409);
             }
 
-            // Sauvegarder l'ancienne date/heure si nécessaire (pour l'historique ou le suivi)
-            $rendezVous->old_date_heure = $rendezVous->date_heure;
-
-            // Mettre à jour tous les champs pertinents du rendez-vous
+            // Update all relevant appointment fields
             $rendezVous->update([
                 'date_heure' => $newDateTime,
-                'reschedule_reason' => $request->reschedule_reason,
-                'patient_id' => $request->patient_id, // Mise à jour du patient_id
-                'medecin_id' => $request->medecin_id, // Mise à jour du medecin_id
-                'motif' => $request->motif,           // Mise à jour du motif
-                'tarif' => $request->tarif,           // Mise à jour du tarif
-                'statut' => 'en_attente',             // Réinitialiser le statut à 'en_attente' après report
+                'reschedule_reason' => $request->reschedule_reason, // Ensure this column exists
+                'patient_id' => $request->patient_id,
+                'medecin_id' => $request->medecin_id,
+                'motif' => $request->motif,
+                'tarif' => $request->tarif,
+                'statut' => 'en_attente', // Reset status to 'en_attente' after rescheduling
             ]);
+
+            // --- NEW: Notification to patient and doctor after rescheduling ---
+            try {
+                $patientUser = $rendezVous->patient->user;
+                $medecinUser = $rendezVous->medecin->user;
+                $rescheduleReason = $request->reschedule_reason;
+
+                // Notification to patient
+                // Pass $patientUser as the last argument
+                $patientUser->notify(new RendezVousReporteNotification($rendezVous, $oldDateTime, $rescheduleReason, 'patient', $patientUser));
+                Log::info('Email notification for appointment rescheduling sent to patient.', [
+                    'rendez_vous_id' => $rendezVous->id,
+                    'recipient_email' => $patientUser->email
+                ]);
+                AppNotification::create([
+                    'type' => 'rendez_vous_reporte_patient',
+                    'contenu' => 'Votre rendez-vous du ' . Carbon::parse($oldDateTime)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') . ' a été reporté au ' . Carbon::parse($rendezVous->date_heure)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') . '. Motif: ' . $rescheduleReason . '.',
+                    'date_envoi' => now(),
+                    'envoye' => true,
+                    'statut' => 'envoye',
+                    'methode_envoi' => 'email',
+                    // 'rendez_vous_id' => $rendezVous->id,
+                ]);
+
+                // Notification to doctor
+                // Pass $medecinUser as the last argument
+                $medecinUser->notify(new RendezVousReporteNotification($rendezVous, $oldDateTime, $rescheduleReason, 'medecin', $medecinUser));
+                Log::info('Email notification for appointment rescheduling sent to doctor.', [
+                    'rendez_vous_id' => $rendezVous->id,
+                    'recipient_email' => $medecinUser->email
+                ]);
+                AppNotification::create([
+                    'type' => 'rendez_vous_reporte_medecin',
+                    'contenu' => 'Le rendez-vous du ' . Carbon::parse($oldDateTime)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') . ' avec ' . $patientUser->nom . ' ' . $patientUser->prenom . ' a été reporté au ' . Carbon::parse($rendezVous->date_heure)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') . '. Motif: ' . $rescheduleReason . '.',
+                    'date_envoi' => now(),
+                    'envoye' => true,
+                    'statut' => 'envoye',
+                    'methode_envoi' => 'email',
+                    // 'rendez_vous_id' => $rendezVous->id,
+                ]);
+
+            } catch (\Exception $notificationException) {
+                Log::error('Failed to send or log "RendezVousReporteNotification".', [
+                    'error' => $notificationException->getMessage(),
+                    'trace' => $notificationException->getTraceAsString(),
+                    'rendez_vous_id' => $rendezVous->id ?? 'N/A'
+                ]);
+            }
+            // --- END NEW ---
 
             return response()->json([
                 'message' => 'Appointment rescheduled successfully',

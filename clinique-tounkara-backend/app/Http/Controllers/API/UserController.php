@@ -92,7 +92,7 @@ class UserController extends Controller
                 case 'patient':
                     $patientData = [
                         'user_id' => $user->id,
-                        'numero_assurance' => $request->input('patient.numero_assurance') ?: ('TEMP-' . $user->id),
+                        'numero_assurance' => $request->input('patient.numero_assurance'),
                         'adresse' => $request->input('patient.adresse'),
                         'date_naissance' => $request->input('patient.date_naissance'),
                         'sexe' => $request->input('patient.sexe'),
